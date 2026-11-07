@@ -27,7 +27,7 @@ jobs:
           import fs from 'node:fs';
           const html = fs.readFileSync('index.html', 'utf8');
           const sw = fs.readFileSync('service-worker.js', 'utf8');
-          const ids = [...html.matchAll(/\\bid="([^"]+)"/g)].map(match => match[1]);
+          const ids = [...html.matchAll(/id="([^"]+)"/g)].map(match => match[1]);
           const uniqueIds = new Set(ids);
           const checks = [
             ['app launches directly', html.includes('<body>') && html.includes('<script src="app.js"></script>')],
