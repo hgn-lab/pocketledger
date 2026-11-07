@@ -1,0 +1,2 @@
+GitHub connection write test for PocketLedger development branch.
+This temporary file can be deleted after verification.
