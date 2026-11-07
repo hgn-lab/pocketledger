@@ -340,7 +340,20 @@ async function render() {
       periodDescription(selectedDate, dashboardPeriod)
     }`;
 
-  document.querySelectorAll(".period-btn").forEach(button => {
+  document.querySelectorAll("[data-quick-action]").forEach(button => {
+  button.addEventListener("click", () => {
+    const type = button.dataset.quickAction;
+    const radio = document.querySelector(`input[name="type"][value="${type}"]`);
+    if (radio) radio.checked = true;
+    showScreen("transactionsScreen");
+    $("description").focus({ preventScroll: true });
+  });
+});
+document.querySelectorAll("[data-go-screen]").forEach(button => {
+  button.addEventListener("click", () => showScreen(button.dataset.goScreen));
+});
+
+document.querySelectorAll(".period-btn").forEach(button => {
     button.classList.toggle(
       "active",
       button.dataset.period === dashboardPeriod
@@ -383,6 +396,55 @@ async function render() {
 
     card.append(title, amount);
     container.append(card);
+  await renderDashboardSnapshot();
+  await renderRecentActivity();
+}
+
+async function renderDashboardSnapshot() {
+  const accounts = (await accountBalances()).filter(account => account.active !== false);
+  const assets = accounts.filter(account => account.classification === "asset")
+    .reduce((sum, account) => sum + Number(account.balance || 0), 0);
+  const liabilities = accounts.filter(account => account.classification === "liability")
+    .reduce((sum, account) => sum + Number(account.balance || 0), 0);
+  const netWorth = assets - liabilities;
+  setSensitiveText($("dashboardNetWorth"), money(netWorth));
+  setSensitiveText($("dashboardAssets"), money(assets));
+  setSensitiveText($("dashboardLiabilities"), money(liabilities));
+  $("dashboardNetWorth").classList.toggle("negative-value", netWorth < 0);
+}
+
+async function renderRecentActivity() {
+  const rows = (await all()).sort((a, b) =>
+    b.date.localeCompare(a.date) || b.id - a.id
+  ).slice(0, 4);
+  const container = $("dashboardRecentList");
+  container.replaceChildren();
+  if (!rows.length) {
+    const empty = document.createElement("p");
+    empty.className = "empty";
+    empty.textContent = "No transactions yet. Add your first expense or income to get started.";
+    container.append(empty);
+    return;
+  }
+  for (const item of rows) {
+    const row = document.createElement("div");
+    row.className = "dashboard-recent-row";
+    const icon = document.createElement("span");
+    icon.className = "dashboard-category-icon";
+    icon.innerHTML = categoryIcon(item.category);
+    const info = document.createElement("div");
+    info.className = "dashboard-recent-info";
+    const title = document.createElement("strong");
+    title.textContent = item.description;
+    const meta = document.createElement("small");
+    const parsed = new Date(item.date + "T00:00:00");
+    meta.textContent = `${item.category || "Other"} · ${parsed.toLocaleDateString("en-ID", {day:"numeric",month:"short"})}`;
+    info.append(title, meta);
+    const amount = document.createElement("strong");
+    amount.className = item.type === "income" ? "recent-income" : "recent-expense";
+    setSensitiveText(amount, `${item.type === "income" ? "+" : "−"}${money(item.amount)}`);
+    row.append(icon, info, amount);
+    container.append(row);
   }
 }
 
