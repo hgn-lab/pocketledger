@@ -1350,3 +1350,40 @@ input[type="date"], input[type="month"] {
   border-color: #ebc6bf;
   color: #913d34;
 }
+
+
+/* Safari date controls: constrain every date field in Settings and Transfers. */
+#settingsScreen input[type="date"],
+#transferForm input[type="date"],
+#accountForm input[type="date"] {
+  display: block; box-sizing: border-box;
+  inline-size: 100%; min-inline-size: 0; max-inline-size: 100%;
+  width: 100%; min-width: 0; max-width: 100%;
+  -webkit-appearance: none; appearance: none;
+}
+#transferForm, #accountForm { min-width: 0; }
+#transferForm label, #accountForm label { min-width: 0; }
+#transferForm input[type="date"] { padding-inline: 10px; text-align: center; }
+
+/* Detailed local-only financial analytics. */
+.financial-insight { margin:12px 0 0; padding:14px 16px; border:1px solid #dce7dc; border-radius:14px; background:#f0f5ef; color:#385744; font-size:12px; line-height:1.55; }
+.comparison-card { display:grid; gap:7px; min-width:0; }
+.comparison-card small { color:var(--muted); font-size:10px; line-height:1.4; }
+.comparison-good { color:#347454 !important; }
+.comparison-caution { color:#b4473d !important; }
+.trend-legend { display:flex; gap:16px; margin:0 0 10px; color:var(--muted); font-size:11px; }
+.trend-legend span { display:flex; align-items:center; gap:6px; }
+.trend-legend i { width:9px; height:9px; border-radius:50%; display:inline-block; }
+.legend-income { background:#4d8064; }
+.legend-expense { background:#bd6558; }
+.cashflow-trend { display:grid; gap:12px; padding:16px; background:#fff; border:1px solid var(--line); border-radius:16px; }
+.cashflow-month { display:grid; grid-template-columns:36px minmax(0,1fr); gap:10px; align-items:center; }
+.cashflow-month-label { color:var(--muted); font-size:11px; }
+.cashflow-month.current .cashflow-month-label { color:var(--green); font-weight:800; }
+.cashflow-bars { display:grid; gap:5px; min-width:0; }
+.cashflow-line { display:grid; grid-template-columns:78px minmax(0,1fr); gap:8px; align-items:center; min-width:0; }
+.cashflow-value { color:var(--muted); font-size:9px; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cashflow-track { height:7px; background:#edf0eb; border-radius:99px; overflow:hidden; min-width:0; }
+.cashflow-fill { height:100%; border-radius:inherit; min-width:0; }
+.cashflow-fill.income { background:#4d8064; }
+.cashflow-fill.expense { background:#bd6558; }
