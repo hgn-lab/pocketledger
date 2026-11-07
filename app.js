@@ -1026,6 +1026,34 @@ async function openAccountEditor(account) {
   $("accountEditDialog").showModal();
 }
 $("closeAccountEdit").onclick=()=>$("accountEditDialog").close();
+$("deleteAccount").onclick = async () => {
+  const id = $("editAccountId").value;
+  const accounts = await allAccounts();
+  const account = accounts.find(item => item.id === id);
+  if (!account) {
+    $("editAccountStatus").textContent = "Account not found.";
+    showToast("Account not found.", "error");
+    return;
+  }
+  const confirmed = confirm(
+    `Archive "${account.name}"? It will disappear from your active accounts, but its transaction and ledger history will be preserved.`
+  );
+  if (!confirmed) return;
+  try {
+    await operation("accounts", "readwrite", store => {
+      account.active = false;
+      account.archivedAt = new Date().toISOString();
+      store.put(account);
+    });
+    $("accountEditDialog").close();
+    await refreshAll();
+    showToast("Account archived. Its history is preserved.");
+  } catch (error) {
+    console.error(error);
+    $("editAccountStatus").textContent = "Could not archive account.";
+    showToast("Could not archive account.", "error");
+  }
+};
 $("editAccountType").onchange=()=>{
   const type=$("editAccountType").value;
   const isCard=type==="Credit card";
