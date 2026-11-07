@@ -1011,3 +1011,104 @@ input[type="date"], input[type="month"] {
   .accounts-screen .account-row { padding: 11px; gap: 5px 7px; }
   .accounts-screen .account-row .account-value { font-size: 12px; }
 }
+
+
+/* HOME DASHBOARD — editorial, calm and action-oriented. */
+#homeScreen .month { margin-top: 22px; }
+#homeScreen .dashboard-subtitle { margin: 8px 0 12px; }
+#homeScreen .balance {
+  padding: 22px;
+  border-radius: 23px;
+  background: linear-gradient(145deg, #173f30, #285b43);
+  box-shadow: 0 12px 28px rgba(23,63,48,.13);
+}
+#homeScreen .balance h2 { margin: 14px 0 23px; }
+.dashboard-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 15px 0 26px;
+}
+.dashboard-action {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 34px minmax(0,1fr) 12px;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  padding: 12px 10px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  color: var(--ink, #20221f);
+}
+.action-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 11px;
+  font-size: 21px;
+  font-weight: 500;
+}
+.expense-icon { background: #f7ece9; color: #a85c4d; }
+.income-icon { background: #eaf2ec; color: #315c49; }
+.dashboard-action > span:nth-child(2) { display: grid; gap: 3px; min-width: 0; }
+.dashboard-action strong { font-size: 11px; white-space: nowrap; }
+.dashboard-action small { color: var(--muted); font-size: 9px; }
+.action-arrow { color: #8a948b; font-size: 13px; }
+.dashboard-actions + .section { margin-top: 0; }
+.dashboard-accounts .section-heading,
+.dashboard-recent .section-heading { align-items: center; }
+.text-action {
+  border: 0; background: transparent; color: var(--green);
+  font-size: 11px; font-weight: 650; padding: 8px 0;
+  white-space: nowrap;
+}
+.dashboard-net-worth {
+  display: flex; justify-content: space-between; align-items: end;
+  gap: 10px; padding: 17px;
+  background: linear-gradient(145deg, #173f30, #285b43);
+  color: white; border-radius: 17px 17px 0 0;
+}
+.dashboard-net-worth > div { display: grid; gap: 7px; min-width: 0; }
+.dashboard-net-worth small { color: #d4e2d8; font-size: 9px; letter-spacing: .1em; }
+.dashboard-net-worth strong { font-size: clamp(20px, 6vw, 27px); letter-spacing: -.04em; overflow-wrap: anywhere; }
+.snapshot-caption { color: #d4e2d8; font-size: 9px; text-align: right; }
+.snapshot-metrics {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+  background: #dce6dc; border: 1px solid #dce6dc;
+  border-top: 0; border-radius: 0 0 17px 17px; overflow: hidden;
+}
+.snapshot-metrics > div { display: grid; gap: 6px; padding: 13px; background: #fff; min-width: 0; }
+.snapshot-metrics small { color: var(--muted); font-size: 10px; }
+.snapshot-metrics strong { font-size: 13px; overflow-wrap: anywhere; }
+.dashboard-recent-list {
+  background: #fff; border: 1px solid var(--line);
+  border-radius: 17px; padding: 0 14px;
+}
+.dashboard-recent-row {
+  display: grid; grid-template-columns: 34px minmax(0,1fr) auto;
+  align-items: center; gap: 10px; padding: 12px 0;
+  border-bottom: 1px solid #eff0ec;
+}
+.dashboard-recent-row:last-child { border-bottom: 0; }
+.dashboard-category-icon {
+  display: grid; place-items: center; width: 32px; height: 32px;
+  border-radius: 11px; background: #edf3ec; color: #587462;
+}
+.dashboard-category-icon svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.dashboard-recent-info { display: grid; gap: 4px; min-width: 0; }
+.dashboard-recent-info strong { font-size: 11px; overflow-wrap: anywhere; }
+.dashboard-recent-info small { color: var(--muted); font-size: 9px; }
+.dashboard-recent-row > strong { font-size: 11px; white-space: nowrap; }
+.recent-income { color: #347454; }
+.recent-expense { color: #343a35; }
+.dashboard-recent-list .empty { padding: 14px 0; }
+#homeScreen .section h3 { margin-top: 24px; }
+@media(max-width:360px) {
+  .dashboard-action { grid-template-columns: 29px minmax(0,1fr); gap: 6px; padding: 10px 8px; }
+  .action-arrow { display: none; }
+  .dashboard-action strong { font-size: 10px; }
+  .snapshot-caption { max-width: 86px; }
+}
