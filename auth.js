@@ -143,8 +143,25 @@ async function startApp() {
   const script = document.createElement("script");
   script.src = "./app.js";
   script.onload = () => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./service-worker.js").catch(console.error);
+    const header = document.querySelector(".app header");
+    if (header && !document.getElementById("pocketLedgerSignOut")) {
+      const signOut = document.createElement("button");
+      signOut.id = "pocketLedgerSignOut";
+      signOut.type = "button";
+      signOut.className = "secondary";
+      signOut.textContent = "Sign out";
+      signOut.style.marginLeft = "8px";
+      signOut.addEventListener("click", async () => {
+        signOut.disabled = true;
+        signOut.textContent = "Signing out…";
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          signOut.disabled = false;
+          signOut.textContent = "Sign out";
+          alert(error.message || "Could not sign out.");
+        }
+      });
+      header.append(signOut);
     }
   };
   script.onerror = () => {
