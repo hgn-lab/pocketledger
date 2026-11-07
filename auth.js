@@ -68,10 +68,12 @@ function renderAuth(mode = "signin", message = "", kind = "") {
       </form>
       <button class="auth-link" id="authSwitch" type="button">${isSignup ? "Already have an account? Sign in" : "Create an account"}</button>
       ${!isNewPassword && !isReset && !isSignup ? '<button class="auth-link" id="authForgot" type="button">Forgot password?</button>' : ""}
-      <p class="auth-message" id="authMessage" role="status" aria-live="polite" data-kind="${kind}">${message}</p>
+      <p class="auth-message" id="authMessage" role="status" aria-live="polite" data-kind="${kind}"></p>
       <p class="auth-legal">Your financial records remain stored locally on this device. Signing in does not upload them.</p>
     </div>`;
   document.body.prepend(shell);
+  const initialMessage = shell.querySelector("#authMessage");
+  initialMessage.textContent = message;
 
   const form = shell.querySelector("#authForm");
   form.addEventListener("submit", async event => {
