@@ -91,8 +91,7 @@ function renderAuth(mode = "signin", message = "", kind = "") {
         const { error } = await supabase.auth.updateUser({ password });
         if (error) throw error;
         recoveryMode = false;
-        await supabase.auth.getSession();
-        renderAuth("signin", "Password updated. Sign in with your new password.", "success");
+        await startApp();
         return;
       }
 
