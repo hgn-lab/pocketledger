@@ -328,6 +328,7 @@ async function render() {
   setSensitiveText($("income"), money(income));
   setSensitiveText($("expenses"), money(expenses));
   setSensitiveText($("balance"), money(income - expenses));
+  $("balance").classList.toggle("negative-value", income - expenses < 0);
   $("count").textContent = `${rows.length} items`;
 
   $("balanceLabel").textContent =
@@ -902,6 +903,7 @@ async function renderAccounts() {
   setSensitiveText($("totalAssets"), money(totalAssets));
   setSensitiveText($("totalLiabilities"), money(totalLiabilities));
   setSensitiveText($("netWorth"), money(totalAssets-totalLiabilities));
+  $("netWorth").classList.toggle("negative-value", totalAssets - totalLiabilities < 0);
 
   const cardList=$("creditCardList"); cardList.replaceChildren();
   if (!cards.length) { const empty=document.createElement("p"); empty.className="empty"; empty.textContent="No credit cards yet. Add one below to track limit, outstanding balance and available credit."; cardList.append(empty); }
@@ -937,7 +939,9 @@ async function renderAccounts() {
     row.addEventListener("click", () => openAccountEditor(account));
     const info=document.createElement("div"); const name=document.createElement("strong"); name.textContent=account.name;
     const meta=document.createElement("small"); meta.textContent=`${account.type} · ${account.active===false?"Archived":account.classification==="liability"?"Liability":"Asset"}`; info.append(name,meta);
-    const value=document.createElement("strong"); value.className="account-value"; setSensitiveText(value,money(account.balance)); row.append(info,value);
+    const value=document.createElement("strong"); value.className="account-value"; setSensitiveText(value,money(account.balance));
+    value.classList.toggle("negative-value", account.balance < 0);
+    row.append(info,value);
     list.append(row);
   });
   await renderAccountSelectors();
