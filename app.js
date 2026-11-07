@@ -835,6 +835,16 @@ $("categoryBudgetForm").onsubmit = async event => {
 };
 
 // ACCOUNTS & LEDGER
+async function populatePaymentAccountSelect(id) {
+  const select = $(id);
+  if (!select) return;
+  const accounts = (await accountBalances()).filter(a => a.active !== false && a.classification === "asset");
+  const previous = select.value;
+  select.replaceChildren(new Option("Choose later", ""));
+  accounts.forEach(a => select.add(new Option(a.name, a.id)));
+  if (accounts.some(a => a.id === previous)) select.value = previous;
+}
+
 async function renderAccountSelectors() {
   const accounts = (await accountBalances()).filter(account => account.active !== false);
   const select = $("transactionAccount");
@@ -858,47 +868,100 @@ async function renderAccountSelectors() {
 
 async function renderAccounts() {
   const accounts = await accountBalances();
-  const list = $("accountList");
-  list.replaceChildren();
-  const assets = accounts.filter(a => a.classification === "asset" && a.active !== false);
-  const liabilities = accounts.filter(a => a.classification === "liability" && a.active !== false);
+  const active = accounts.filter(a => a.active !== false);
+  const cards = active.filter(a => a.type === "Credit card");
+  const others = accounts.filter(a => a.type !== "Credit card");
+  const assets = active.filter(a => a.classification === "asset");
+  const liabilities = active.filter(a => a.classification === "liability");
   const totalAssets = assets.reduce((s,a) => s + a.balance, 0);
   const totalLiabilities = liabilities.reduce((s,a) => s + a.balance, 0);
   setSensitiveText($("totalAssets"), money(totalAssets));
   setSensitiveText($("totalLiabilities"), money(totalLiabilities));
   setSensitiveText($("netWorth"), money(totalAssets-totalLiabilities));
-  if (!accounts.length) {
-    const empty = document.createElement("p"); empty.className = "empty";
-    empty.textContent = "No accounts yet. Add your first bank, cash, wallet, savings or liability account below.";
-    list.append(empty);
-  }
-  accounts.forEach(account => {
-    const row = document.createElement("div"); row.className = "account-row";
-    const info = document.createElement("div");
-    const name = document.createElement("strong"); name.textContent = account.name;
-    const meta = document.createElement("small"); meta.textContent = `${account.type} · ${account.active === false ? "Archived" : account.classification === "liability" ? "Liability" : "Asset"}`;
-    info.append(name, meta);
-    const value = document.createElement("strong"); value.className = "account-value";
-    setSensitiveText(value, money(account.balance));
-    if (account.balance < 0) value.classList.add("negative");
-    row.append(info, value);
-    if (account.balance < 0) { const warning=document.createElement("small"); warning.className="account-warning"; warning.textContent="Negative balance — review this account"; row.append(warning); }
-    const archive = document.createElement("button"); archive.className="delete";
-    archive.textContent = account.active === false ? "Archived" : "Archive";
-    archive.disabled = account.active === false;
-    archive.onclick = async () => {
-      if (!confirm(`Archive ${account.name}? Historical entries will be kept.`)) return;
-      await operation("accounts", "readwrite", s => s.put({...account, active:false, updatedAt:new Date().toISOString()}));
-      await refreshAll();
-    };
-    row.append(archive); list.append(row);
+
+  const cardList=$("creditCardList"); cardList.replaceChildren();
+  if (!cards.length) { const empty=document.createElement("p"); empty.className="empty"; empty.textContent="No credit cards yet. Add one below to track limit, outstanding balance and available credit."; cardList.append(empty); }
+  cards.forEach(account => {
+    const limit=Number(account.creditLimit||0), outstanding=Math.max(0,Number(account.balance||0));
+    const available=Math.max(0,limit-outstanding), usage=limit>0?Math.min(100,outstanding/limit*100):0;
+    const card=document.createElement("article"); card.className="credit-card";
+    const top=document.createElement("div"); top.className="credit-card-top";
+    const name=document.createElement("strong"); name.textContent=account.name;
+    const tag=document.createElement("span"); tag.className="credit-tag"; tag.textContent="CREDIT CARD"; top.append(name,tag);
+    const label=document.createElement("small"); label.textContent="OUTSTANDING BALANCE";
+    const balance=document.createElement("strong"); balance.className="credit-outstanding"; setSensitiveText(balance,money(outstanding));
+    const metrics=document.createElement("div"); metrics.className="credit-metrics";
+    const l=document.createElement("div"), r=document.createElement("div");
+    const ll=document.createElement("small"); ll.textContent="Credit limit"; const lv=document.createElement("strong"); setSensitiveText(lv,limit?money(limit):"Not set");
+    const al=document.createElement("small"); al.textContent="Available credit"; const av=document.createElement("strong"); setSensitiveText(av,limit?money(available):"—");
+    l.append(ll,lv); r.append(al,av); metrics.append(l,r);
+    const track=document.createElement("div"); track.className="credit-usage-track";
+    const fill=document.createElement("div"); fill.className="credit-usage-fill"; fill.style.width=`${usage}%`; track.append(fill);
+    const usageLabel=document.createElement("small"); usageLabel.className="credit-usage-label"; usageLabel.textContent=limit?`${usage.toFixed(0)}% of limit used`:"Add a limit to calculate available credit";
+    const edit=document.createElement("button"); edit.className="secondary-button"; edit.textContent="Edit card"; edit.onclick=()=>openAccountEditor(account);
+    card.append(top,label,balance,metrics,track,usageLabel,edit); cardList.append(card);
+  });
+  const list=$("accountList"); list.replaceChildren();
+  if (!others.length) { const empty=document.createElement("p"); empty.className="empty"; empty.textContent="No other accounts yet. Add bank, cash, savings, investment or liability accounts below."; list.append(empty); }
+  others.forEach(account=>{
+    const row=document.createElement("div"); row.className="account-row";
+    const info=document.createElement("div"); const name=document.createElement("strong"); name.textContent=account.name;
+    const meta=document.createElement("small"); meta.textContent=`${account.type} · ${account.active===false?"Archived":account.classification==="liability"?"Liability":"Asset"}`; info.append(name,meta);
+    const value=document.createElement("strong"); value.className="account-value"; setSensitiveText(value,money(account.balance)); row.append(info,value);
+    const edit=document.createElement("button"); edit.className="secondary-button"; edit.textContent="Edit"; edit.onclick=()=>openAccountEditor(account); row.append(edit);
+    const archive=document.createElement("button"); archive.className="delete"; archive.textContent=account.active===false?"Archived":"Archive"; archive.disabled=account.active===false;
+    archive.onclick=async()=>{if(!confirm(`Archive ${account.name}? Historical entries will be kept.`))return;await operation("accounts","readwrite",s=>s.put({...account,active:false,updatedAt:new Date().toISOString()}));await refreshAll();}; row.append(archive); list.append(row);
   });
   await renderAccountSelectors();
 }
 
-$("accountType").addEventListener("change", () => {
+async function openAccountEditor(account) {
+  $("editAccountId").value=account.id;
+  $("editAccountName").value=account.name;
+  $("editAccountType").value=account.type;
+  $("editAccountClassification").value=account.classification;
+  const isCard=account.type==="Credit card";
+  $("editCreditFields").hidden=!isCard;
+  $("editCreditLimit").value=account.creditLimit||"";
+  $("editStatementDay").value=account.statementDay||"";
+  $("editDueDay").value=account.dueDay||"";
+  $("editMinimumPayment").value=account.minimumPayment||0;
+  await populatePaymentAccountSelect("editPaymentAccount");
+  $("editPaymentAccount").value=account.paymentAccountId||"";
+  $("accountEditDialog").showModal();
+}
+$("closeAccountEdit").onclick=()=>$("accountEditDialog").close();
+$("editAccountType").onchange=()=>{
+  const type=$("editAccountType").value;
+  const isCard=type==="Credit card";
+  $("editAccountClassification").value=["Credit card","Personal loan","Mortgage","Other liability"].includes(type)?"liability":"asset";
+  $("editCreditFields").hidden=!isCard;
+};
+$("accountEditForm").onsubmit=async event=>{
+  event.preventDefault();
+  const id=$("editAccountId").value, accounts=await allAccounts(), old=accounts.find(a=>a.id===id);
+  if(!old){$("editAccountStatus").textContent="Account not found.";return;}
+  const type=$("editAccountType").value, isCard=type==="Credit card";
+  const limit=Number($("editCreditLimit").value||0);
+  if(isCard&&(!Number.isSafeInteger(limit)||limit<=0)){$("editAccountStatus").textContent="Enter a valid credit limit.";return;}
+  const updated={...old,name:$("editAccountName").value.trim(),type,classification:$("editAccountClassification").value,
+    creditLimit:isCard?limit:null,statementDay:isCard?(Number($("editStatementDay").value)||null):null,
+    dueDay:isCard?(Number($("editDueDay").value)||null):null,minimumPayment:isCard?Number($("editMinimumPayment").value||0):0,
+    paymentAccountId:isCard?($("editPaymentAccount").value||null):null,updatedAt:new Date().toISOString()};
+  if(!updated.name){$("editAccountStatus").textContent="Enter an account name.";return;}
+  await operation("accounts","readwrite",s=>s.put(updated));
+  $("accountEditDialog").close(); await refreshAll();
+};
+
+$("accountType").addEventListener("change", async () => {
   const liabilityTypes = ["Credit card", "Personal loan", "Mortgage", "Other liability"];
+  const isCard = $("accountType").value === "Credit card";
   $("accountClassification").value = liabilityTypes.includes($("accountType").value) ? "liability" : "asset";
+  $("creditLimitField").hidden = !isCard;
+  $("creditDetailsFields").hidden = !isCard;
+  await populatePaymentAccountSelect("paymentAccount");
+  $("creditLimit").required = isCard;
+  await populatePaymentAccountSelect("paymentAccount");
 });
 
 $("accountForm").onsubmit = async event => {
@@ -910,8 +973,18 @@ $("accountForm").onsubmit = async event => {
   if (!name || !Number.isSafeInteger(openingBalance) || openingBalance < 0) {
     $("accountStatus").textContent = "Enter an account name and a valid non-negative opening balance."; return;
   }
+  const isCard = type === "Credit card";
+  const creditLimit = Number($("creditLimit").value || 0);
+  if (isCard && (!Number.isSafeInteger(creditLimit) || creditLimit <= 0)) {
+    $("accountStatus").textContent = "Enter a valid credit limit."; return;
+  }
   const account = { id:makeId("account"), name, type, classification,
     openingBalance, openingBalanceDate:$("openingDate").value || localDate(),
+    creditLimit: isCard ? creditLimit : null,
+    statementDay: isCard ? Number($("statementDay").value || 0) || null : null,
+    dueDay: isCard ? Number($("dueDay").value || 0) || null : null,
+    minimumPayment: isCard ? Number($("minimumPayment").value || 0) : 0,
+    paymentAccountId: isCard ? ($("paymentAccount").value || null) : null,
     currency:"IDR", active:true, createdAt:new Date().toISOString() };
   try {
     const openingGroup = makeId("opening");

@@ -207,8 +207,13 @@
       <div><small>Total liabilities</small><strong id="totalLiabilities">Rp0</strong></div>
       <div class="net-worth"><small>Net worth</small><strong id="netWorth">Rp0</strong></div>
     </section>
+    <section class="section credit-card-section">
+      <div class="section-heading"><h3>Credit cards</h3><small>Credit facilities</small></div>
+      <p class="account-note">Credit limits are purchasing capacity, not assets. Outstanding balances remain included in total liabilities and net worth.</p>
+      <div id="creditCardList" class="credit-card-list"></div>
+    </section>
     <section class="section">
-      <h3>Your accounts</h3>
+      <h3>Other accounts & liabilities</h3>
       <p class="account-note">Balances are calculated from opening balances and recorded ledger activity. Older transactions remain unassigned until you link them.</p>
       <div id="accountList" class="account-list"></div>
     </section>
@@ -221,6 +226,13 @@
             <option>Bank</option><option>Cash</option><option>E-wallet</option><option>Savings</option><option>Investment</option><option>Property</option><option>Vehicle</option><option>Credit card</option><option>Personal loan</option><option>Mortgage</option><option>Other liability</option>
           </select></label>
           <label>Classification<select id="accountClassification"><option value="asset">Asset</option><option value="liability">Liability</option></select></label>
+        </div>
+        <label id="creditLimitField" class="credit-limit-field" hidden>Credit limit (IDR)<input id="creditLimit" type="number" inputmode="numeric" min="1" step="1" value="0" data-sensitive-input></label>
+        <div id="creditDetailsFields" class="credit-details-fields" hidden>
+          <label>Statement day<input id="statementDay" type="number" min="1" max="31" placeholder="e.g. 20"></label>
+          <label>Payment due day<input id="dueDay" type="number" min="1" max="31" placeholder="e.g. 5"></label>
+          <label>Minimum payment (IDR)<input id="minimumPayment" type="number" min="0" step="1" value="0" data-sensitive-input></label>
+          <label>Repayment account<select id="paymentAccount"><option value="">Choose later</option></select></label>
         </div>
         <label>Opening balance (IDR)<input id="openingBalance" type="number" inputmode="numeric" min="0" step="1" value="0" data-sensitive-input required></label>
         <label>Opening balance date<input id="openingDate" type="date" required></label>
@@ -240,6 +252,30 @@
       </form>
     </section>
   </section>
+
+  <dialog id="accountEditDialog" class="edit-dialog">
+    <form id="accountEditForm" method="dialog">
+      <div class="section-heading"><h3 id="accountEditTitle">Edit account</h3><button type="button" class="delete" id="closeAccountEdit">Close</button></div>
+      <input id="editAccountId" type="hidden">
+      <label>Account name<input id="editAccountName" maxlength="60" required></label>
+      <div class="two">
+        <label>Account type<select id="editAccountType"><option>Bank</option><option>Cash</option><option>E-wallet</option><option>Savings</option><option>Investment</option><option>Property</option><option>Vehicle</option><option>Credit card</option><option>Personal loan</option><option>Mortgage</option><option>Other liability</option></select></label>
+        <label>Classification<select id="editAccountClassification"><option value="asset">Asset</option><option value="liability">Liability</option></select></label>
+      </div>
+      <div id="editCreditFields" hidden>
+        <label>Credit limit (IDR)<input id="editCreditLimit" type="number" min="1" step="1"></label>
+        <div class="two">
+          <label>Statement day<input id="editStatementDay" type="number" min="1" max="31"></label>
+          <label>Payment due day<input id="editDueDay" type="number" min="1" max="31"></label>
+        </div>
+        <label>Minimum payment (IDR)<input id="editMinimumPayment" type="number" min="0" step="1"></label>
+        <label>Repayment account<select id="editPaymentAccount"><option value="">Choose later</option></select></label>
+      </div>
+      <p class="account-note">Opening balances and historical activity are protected. Use a ledger adjustment for balance corrections.</p>
+      <button class="primary" type="submit">Save changes</button>
+      <p id="editAccountStatus" role="status"></p>
+    </form>
+  </dialog>
 
   <!-- TRANSACTIONS SCREEN -->
   <section id="transactionsScreen" class="screen">
