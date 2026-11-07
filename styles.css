@@ -1224,3 +1224,30 @@ input[type="date"], input[type="month"] {
 .archive-dialog-actions { display: grid; gap: 9px; margin-top: 5px; }
 .archive-dialog-actions button { width: 100%; min-height: 46px; border-radius: 13px; font-weight: 650; }
 .danger-primary { border: 0; background: #a8493e; color: #fff; }
+
+
+/* Modern Overview date control, matched to the segmented period buttons. */
+#homeScreen .month { align-items: center; gap: 14px; }
+#homeScreen .month > b { font-size: 17px; letter-spacing: -.025em; }
+#homeScreen .month input[type="date"] {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 0 1 190px;
+  width: 190px;
+  max-width: 58%;
+  min-height: 54px;
+  padding: 0 15px;
+  border: 1px solid #e5e9e2;
+  border-radius: 16px;
+  background: #fff;
+  color: #263d31;
+  box-shadow: 0 3px 12px rgba(32,62,50,.045);
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -.02em;
+  text-align: center;
+}
+#homeScreen .month input[type="date"]:focus-visible {
+  outline: 3px solid rgba(92,133,107,.25);
+  border-color: #91aa97;
+}
