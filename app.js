@@ -1008,6 +1008,26 @@ async function renderAccounts() {
   await renderAccountSelectors();
 }
 
+function confirmArchiveAccount(accountName) {
+  const dialog = $("archiveConfirmDialog");
+  $("archiveConfirmName").textContent = accountName;
+  return new Promise(resolve => {
+    const finish = value => {
+      dialog.dataset.confirmed = String(value);
+      dialog.close();
+    };
+    const onClose = () => {
+      dialog.removeEventListener("close", onClose);
+      resolve(dialog.dataset.confirmed === "true");
+      delete dialog.dataset.confirmed;
+    };
+    dialog.addEventListener("close", onClose);
+    $("cancelArchive").onclick = () => finish(false);
+    $("confirmArchive").onclick = () => finish(true);
+    dialog.showModal();
+  });
+}
+
 async function openAccountEditor(account) {
   $("editAccountId").value=account.id;
   $("editAccountName").value=account.name;
@@ -1035,15 +1055,13 @@ $("deleteAccount").onclick = async () => {
     showToast("Account not found.", "error");
     return;
   }
-  const confirmed = confirm(
-    `Archive "${account.name}"? It will disappear from your active accounts, but its transaction and ledger history will be preserved.`
-  );
+  const confirmed = await confirmArchiveAccount(account.name);
   if (!confirmed) return;
   try {
     await operation("accounts", "readwrite", store => {
       account.active = false;
       account.archivedAt = new Date().toISOString();
-      store.put(account);
+      return store.put(account);
     });
     $("accountEditDialog").close();
     await refreshAll();
