@@ -1112,3 +1112,10 @@ input[type="date"], input[type="month"] {
   .dashboard-action strong { font-size: 10px; }
   .snapshot-caption { max-width: 86px; }
 }
+
+
+/* Four-tab navigation: analytics lives on Home and account management lives in Settings. */
+.bottom-nav { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media(max-width:380px) { .bottom-nav { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.analytics-embedded { margin-top: 28px; }
+.settings-screen .accounts-screen { margin-top: 28px; }
