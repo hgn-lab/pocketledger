@@ -27,9 +27,12 @@ jobs:
           import fs from 'node:fs';
           const html = fs.readFileSync('index.html', 'utf8');
           const sw = fs.readFileSync('service-worker.js', 'utf8');
+          const ids = [...html.matchAll(/\\bid="([^"]+)"/g)].map(match => match[1]);
+          const uniqueIds = new Set(ids);
           const checks = [
             ['app launches directly', html.includes('<body>') && html.includes('<script src="app.js"></script>')],
             ['authentication module removed from page', !html.includes('auth.js')],
+            ['no duplicate HTML IDs', uniqueIds.size === ids.length],
             ['four bottom navigation tabs', (html.match(/class="nav-btn/g) || []).length === 4],
             ['analytics embedded in Home', html.indexOf('id="analyticsScreen"') < html.indexOf('<!-- BUDGET SCREEN -->')],
             ['accounts embedded in Settings', html.indexOf('id="accountsScreen"') > html.indexOf('id="settingsScreen"')],
