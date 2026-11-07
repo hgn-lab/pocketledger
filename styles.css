@@ -1251,3 +1251,32 @@ input[type="date"], input[type="month"] {
   outline: 3px solid rgba(92,133,107,.25);
   border-color: #91aa97;
 }
+
+
+/* Archived account shelf. */
+.archived-accounts-section { margin-top: 18px; }
+.archived-accounts-section details > summary {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; min-height: 46px; cursor: pointer;
+  color: #294737; font-weight: 700; list-style: none;
+}
+.archived-accounts-section details > summary::-webkit-details-marker { display: none; }
+.archive-count {
+  display: inline-grid; place-items: center; min-width: 27px; height: 27px;
+  padding: 0 8px; border-radius: 99px; background: #edf2ed;
+  color: #496653; font-size: 12px;
+}
+.archived-account-list { display: grid; gap: 10px; margin-top: 14px; }
+.archived-account-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 15px; border: 1px solid #e6eae4;
+  border-radius: 15px; background: #fff;
+}
+.archived-account-info { display: grid; gap: 5px; min-width: 0; }
+.archived-account-info strong { overflow-wrap: anywhere; color: #29352e; }
+.archived-account-info small { color: #899188; font-size: 12px; }
+.restore-account-button {
+  flex: 0 0 auto; border: 1px solid #dce7dc; border-radius: 11px;
+  padding: 10px 14px; background: #edf4ee; color: #315c49;
+  font-size: 13px; font-weight: 700;
+}
