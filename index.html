@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="styles.css">
   <title>PocketLedger</title>
 </head>
-<body class="auth-pending">
+<body>
 <main class="app">
 
   <header>
@@ -431,12 +431,12 @@
       <input id="backupFile" type="file" accept=".json,application/json" hidden>
       <p id="backupStatus" class="backup-status" role="status" aria-live="polite"></p>
     </section>
-    <p class="settings-note">Your financial records stay on this device. Signing in does not upload them.</p>
+    <p class="settings-note">Your financial records stay on this device. No account or sign-in is required.</p>
   </section>
 
   <footer>Stored locally on this device. Export regularly.</footer>
 </main>
 
-<script type="module" src="auth.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
