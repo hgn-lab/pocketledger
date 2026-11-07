@@ -159,7 +159,9 @@ function showScreen(screenId) {
   if (screenId === "transactionsScreen") {
     renderTransactions().catch(console.error);
   }
-
+  if (screenId === "analyticsScreen") {
+    renderAnalytics().catch(console.error);
+  }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -481,6 +483,155 @@ async function renderBudgets() {
   $("budgetMonth").value = month;
 }
 
+async function renderAnalytics() {
+  const selectedMonth = $("analyticsMonth").value || currentMonth();
+
+  const transactions = await all();
+
+  const monthRows = transactions.filter(item =>
+    item.date.startsWith(selectedMonth)
+  );
+
+  const income = monthRows
+    .filter(item => item.type === "income")
+    .reduce((sum, item) => sum + item.amount, 0);
+
+  const expenses = monthRows
+    .filter(item => item.type === "expense")
+    .reduce((sum, item) => sum + item.amount, 0);
+
+  const savings = income - expenses;
+  const savingsRate = income > 0
+    ? (savings / income * 100).toFixed(1) + "%"
+    : "—";
+
+  $("analyticsIncome").textContent = money(income);
+  $("analyticsExpenses").textContent = money(expenses);
+  $("analyticsSavings").textContent = money(savings);
+  $("analyticsSavingsRate").textContent = savingsRate;
+
+  // Spending by category
+  const categoryTotals = {};
+
+  for (const item of monthRows) {
+    if (item.type !== "expense") continue;
+
+    const category = item.category || "Other";
+    categoryTotals[category] =
+      (categoryTotals[category] || 0) + item.amount;
+  }
+
+  const categoryContainer = $("categoryAnalytics");
+  categoryContainer.replaceChildren();
+
+  const categories = Object.entries(categoryTotals)
+    .sort((a, b) => b[1] - a[1]);
+
+  if (!categories.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty";
+    empty.textContent = "No spending recorded this month yet.";
+    categoryContainer.append(empty);
+  }
+
+  const largestCategory = Math.max(
+    1,
+    ...categories.map(item => item[1])
+  );
+
+  for (const [category, amount] of categories) {
+    const row = document.createElement("div");
+    row.className = "analytics-category";
+
+    const top = document.createElement("div");
+    top.className = "analytics-category-top";
+
+    const name = document.createElement("strong");
+    name.textContent = category;
+
+    const value = document.createElement("span");
+    value.textContent = money(amount);
+
+    top.append(name, value);
+
+    const track = document.createElement("div");
+    track.className = "progress-track analytics-track";
+
+    const fill = document.createElement("div");
+    fill.className = "progress-fill analytics-fill";
+    fill.style.width =
+      `${amount / largestCategory * 100}%`;
+
+    track.append(fill);
+    row.append(top, track);
+    categoryContainer.append(row);
+  }
+
+  // Six-month spending trend, ending at selected month
+  const [year, month] = selectedMonth.split("-").map(Number);
+
+  const trendMonths = [];
+
+  for (let offset = 5; offset >= 0; offset--) {
+    const date = new Date(year, month - 1 - offset, 1);
+
+    const key =
+      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+    const label = date.toLocaleDateString("en-ID", {
+      month: "short"
+    });
+
+    const spent = transactions
+      .filter(item =>
+        item.type === "expense" &&
+        item.date.startsWith(key)
+      )
+      .reduce((sum, item) => sum + item.amount, 0);
+
+    trendMonths.push({ key, label, spent });
+  }
+
+  const trendContainer = $("spendingTrend");
+  trendContainer.replaceChildren();
+
+  const highestSpending = Math.max(
+    1,
+    ...trendMonths.map(item => item.spent)
+  );
+
+  for (const item of trendMonths) {
+    const column = document.createElement("div");
+    column.className = "trend-column";
+
+    const amount = document.createElement("span");
+    amount.className = "trend-amount";
+    amount.textContent = money(item.spent);
+
+    const track = document.createElement("div");
+    track.className = "trend-bar-track";
+
+    const bar = document.createElement("div");
+    bar.className = "trend-bar";
+
+    bar.style.height =
+      `${item.spent / highestSpending * 100}%`;
+
+    if (item.key === selectedMonth) {
+      bar.classList.add("current-month");
+    }
+
+    track.append(bar);
+
+    const label = document.createElement("span");
+    label.className = "trend-label";
+    label.textContent = item.label;
+
+    column.append(amount, track, label);
+    trendContainer.append(column);
+  }
+}
+
 // SAVE GLOBAL BUDGET
 
 $("globalBudgetForm").onsubmit = async event => {
@@ -609,6 +760,10 @@ async function refreshAll() {
   if ($("budgetsScreen").classList.contains("active")) {
     await renderBudgets();
   }
+
+  if ($("analyticsScreen").classList.contains("active")) {
+    await renderAnalytics();
+  }
 }
 
 // DASHBOARD CONTROLS
@@ -618,7 +773,8 @@ $("month").onchange = () =>
 
 $("budgetMonth").onchange = () =>
   renderBudgets().catch(console.error);
-
+$("analyticsMonth").onchange = () =>
+  renderAnalytics().catch(console.error);
 document.querySelectorAll(".period-btn").forEach(button => {
   button.addEventListener("click", () => {
     dashboardPeriod = button.dataset.period;
@@ -674,7 +830,7 @@ $("export").onclick = async () => {
     $("date").value = localDate();
     $("month").value = localDate();
     $("budgetMonth").value = currentMonth();
-
+$("analyticsMonth").value = currentMonth();
     await refreshAll();
 
     if ("serviceWorker" in navigator) {
