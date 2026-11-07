@@ -20,6 +20,68 @@ function currentMonth() {
 let db;
 let dashboardPeriod = "monthly";
 
+// Privacy preference is stored separately from financial records.
+let balancesHidden = false;
+try {
+  balancesHidden =
+    localStorage.getItem("pocketledgerBalancesHidden") === "true";
+} catch (error) {
+  console.warn("Privacy preference storage is unavailable.", error);
+}
+
+function setSensitiveText(element, value) {
+  const text = String(value);
+  element.dataset.sensitiveValue = text;
+  element.dataset.sensitive = "true";
+  element.textContent = balancesHidden ? "••••••" : text;
+}
+
+function setSensitiveInput(input, value) {
+  input.value = value === "" ? "" : String(value);
+  input.type = balancesHidden ? "password" : "number";
+}
+
+function applyPrivacyMode() {
+  document.querySelectorAll('[data-sensitive="true"]').forEach(element => {
+    element.textContent = balancesHidden
+      ? "••••••"
+      : (element.dataset.sensitiveValue || "");
+  });
+
+  document.querySelectorAll("[data-sensitive-input]").forEach(input => {
+    input.type = balancesHidden ? "password" : "number";
+  });
+
+  const button = $("privacyToggle");
+  if (!button) return;
+
+  button.setAttribute("aria-pressed", String(balancesHidden));
+  button.setAttribute(
+    "aria-label",
+    balancesHidden ? "Show financial amounts" : "Hide financial amounts"
+  );
+  button.title = balancesHidden ? "Show financial amounts" : "Hide financial amounts";
+  button.innerHTML = balancesHidden
+    ? `<svg class="privacy-icon" viewBox="0 0 24 24" aria-hidden="true">
+         <path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/>
+         <path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a16 16 0 0 1-3.1 3.8M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7c1.5 0 2.8-.4 4-1"/>
+       </svg><span>Show</span>`
+    : `<svg class="privacy-icon" viewBox="0 0 24 24" aria-hidden="true">
+         <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/>
+         <circle cx="12" cy="12" r="3"/>
+       </svg><span>Hide</span>`;
+}
+
+function togglePrivacyMode() {
+  balancesHidden = !balancesHidden;
+  try {
+    localStorage.setItem("pocketledgerBalancesHidden", String(balancesHidden));
+  } catch (error) {
+    console.warn("Could not save privacy preference.", error);
+  }
+  applyPrivacyMode();
+}
+
 const categories = [
   "Food", "Transport", "Shopping", "Housing",
   "Bills", "Health", "Entertainment", "Other"
@@ -171,6 +233,8 @@ document.querySelectorAll(".nav-btn").forEach(button => {
   });
 });
 
+$("privacyToggle").addEventListener("click", togglePrivacyMode);
+
 // DASHBOARD
 
 async function render() {
@@ -192,9 +256,9 @@ async function render() {
     .filter(x => x.type === "expense")
     .reduce((sum, x) => sum + x.amount, 0);
 
-  $("income").textContent = money(income);
-  $("expenses").textContent = money(expenses);
-  $("balance").textContent = money(income - expenses);
+  setSensitiveText($("income"), money(income));
+  setSensitiveText($("expenses"), money(expenses));
+  setSensitiveText($("balance"), money(income - expenses));
   $("count").textContent = `${rows.length} items`;
 
   $("balanceLabel").textContent =
@@ -241,7 +305,11 @@ async function render() {
     title.textContent = label;
 
     const amount = document.createElement("strong");
-    amount.textContent = value;
+    if (label === "Average daily spending") {
+      setSensitiveText(amount, value);
+    } else {
+      amount.textContent = value;
+    }
 
     card.append(title, amount);
     container.append(card);
@@ -292,8 +360,10 @@ async function renderTransactions() {
       "amount " +
       (item.type === "income" ? "positive" : "negative");
 
-    amount.textContent =
-      (item.type === "income" ? "+" : "−") + money(item.amount);
+    setSensitiveText(
+      amount,
+      (item.type === "income" ? "+" : "−") + money(item.amount)
+    );
 
     const button = document.createElement("button");
     button.className = "delete";
@@ -342,20 +412,24 @@ async function renderBudgets() {
   const globalLimit = globalRecord ? globalRecord.amount : 0;
   const remaining = globalLimit - totalSpent;
 
-  $("globalSpent").textContent = money(totalSpent);
+  setSensitiveText($("globalSpent"), money(totalSpent));
 
   const [year, monthNumber] = month.split("-").map(Number);
   const daysInMonth = new Date(year, monthNumber, 0).getDate();
 
-  $("dailyAverage").textContent =
-    money(totalSpent / daysInMonth);
+  setSensitiveText(
+    $("dailyAverage"),
+    money(totalSpent / daysInMonth)
+  );
 
-  $("budgetRemaining").textContent =
-    money(remaining);
+  setSensitiveText($("budgetRemaining"), money(remaining));
 
-  $("budgetSummary").textContent = globalLimit > 0
-    ? `${money(totalSpent)} spent of ${money(globalLimit)}`
-    : "Set your monthly budget to track your spending.";
+  setSensitiveText(
+    $("budgetSummary"),
+    globalLimit > 0
+      ? `${money(totalSpent)} spent of ${money(globalLimit)}`
+      : "Set your monthly budget to track your spending."
+  );
 
   const usedPercent = globalLimit > 0
     ? totalSpent / globalLimit * 100
@@ -384,8 +458,10 @@ async function renderBudgets() {
     globalLimit > 0 && remaining < 0
   );
 
-  $("globalBudgetAmount").value =
-    globalLimit > 0 ? globalLimit : "";
+  setSensitiveInput(
+    $("globalBudgetAmount"),
+    globalLimit > 0 ? globalLimit : ""
+  );
 
   const categoryRecords = budgets.filter(item =>
     item.month === month && item.category !== "GLOBAL"
@@ -421,8 +497,10 @@ async function renderBudgets() {
     name.textContent = budget.category;
 
     const numbers = document.createElement("span");
-    numbers.textContent =
-      `${money(spent)} / ${money(budget.amount)}`;
+    setSensitiveText(
+      numbers,
+      `${money(spent)} / ${money(budget.amount)}`
+    );
 
     top.append(name, numbers);
 
@@ -446,8 +524,10 @@ async function renderBudgets() {
       : `${percent.toFixed(1)}% used`;
 
     const categoryRemaining = document.createElement("span");
-    categoryRemaining.textContent =
-      `${money(budget.amount - spent)} remaining`;
+    setSensitiveText(
+      categoryRemaining,
+      `${money(budget.amount - spent)} remaining`
+    );
 
     bottom.append(status, categoryRemaining);
 
@@ -460,7 +540,7 @@ async function renderBudgets() {
 
     edit.onclick = () => {
       $("budgetCategory").value = budget.category;
-      $("categoryBudgetAmount").value = budget.amount;
+      setSensitiveInput($("categoryBudgetAmount"), budget.amount);
       $("categoryBudgetAmount").focus();
     };
 
@@ -505,9 +585,9 @@ async function renderAnalytics() {
     ? (savings / income * 100).toFixed(1) + "%"
     : "—";
 
-  $("analyticsIncome").textContent = money(income);
-  $("analyticsExpenses").textContent = money(expenses);
-  $("analyticsSavings").textContent = money(savings);
+  setSensitiveText($("analyticsIncome"), money(income));
+  setSensitiveText($("analyticsExpenses"), money(expenses));
+  setSensitiveText($("analyticsSavings"), money(savings));
   $("analyticsSavingsRate").textContent = savingsRate;
 
   // Spending by category
@@ -550,7 +630,7 @@ async function renderAnalytics() {
     name.textContent = category;
 
     const value = document.createElement("span");
-    value.textContent = money(amount);
+    setSensitiveText(value, money(amount));
 
     top.append(name, value);
 
@@ -606,7 +686,7 @@ async function renderAnalytics() {
 
     const amount = document.createElement("span");
     amount.className = "trend-amount";
-    amount.textContent = money(item.spent);
+    setSensitiveText(amount, money(item.spent));
 
     const track = document.createElement("div");
     track.className = "trend-bar-track";

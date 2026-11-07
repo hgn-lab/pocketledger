@@ -118,9 +118,14 @@ h1 span {
   font-weight: 600;
 }
 
-.nav-btn span {
-  font-size: 23px;
-  line-height: 1.1;
+.nav-btn svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .nav-btn.active {
@@ -635,8 +640,9 @@ footer {
     font-size: 10px;
   }
 
-  .nav-btn span {
-    font-size: 21px;
+  .nav-btn svg {
+    width: 21px;
+    height: 21px;
   }
 
   .trend-chart {
@@ -647,5 +653,53 @@ footer {
 
   .trend-amount {
     font-size: 8px;
+  }
+}
+
+/* GLOBAL BALANCE PRIVACY */
+.balance-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.privacy-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #ffffff45;
+  border-radius: 999px;
+  padding: 7px 10px;
+  background: #ffffff12;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.privacy-toggle:active {
+  background: #ffffff25;
+}
+
+.privacy-icon {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.nav-btn span {
+  font-size: 10px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+@media(max-width:380px) {
+  .nav-btn span {
+    font-size: 9px;
   }
 }
