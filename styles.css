@@ -1119,3 +1119,16 @@ input[type="date"], input[type="month"] {
 @media(max-width:380px) { .bottom-nav { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .analytics-embedded { margin-top: 28px; }
 .settings-screen .accounts-screen { margin-top: 28px; }
+
+/* SETTINGS REDESIGN — segmented account sections and utility cards. */
+.settings-screen .accounts-screen { margin-top: 12px; padding: 16px 12px 20px; }
+.settings-tabs { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); margin: 18px 0 14px; }
+.settings-tabs .period-btn { padding: 10px 5px; font-size: 11px; white-space: nowrap; }
+.settings-panel { display: grid; gap: 14px; }
+.settings-panel[hidden] { display: none !important; }
+.settings-panel > .account-note { margin: 0; }
+.settings-screen .account-summary { margin-top: 12px; }
+.settings-screen .export-section { margin-top: 22px; }
+.settings-screen .backup-section { margin-top: 22px; }
+.settings-screen .settings-note { margin: 16px 2px 0; }
+@media(max-width:360px) { .settings-tabs .period-btn { font-size: 10px; padding-left: 2px; padding-right: 2px; } }
