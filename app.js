@@ -13,42 +13,78 @@ function localDate() {
     .toISOString().slice(0, 10);
 }
 
+function currentMonth() {
+  return localDate().slice(0, 7);
+}
+
 let db;
 let dashboardPeriod = "monthly";
 
+const categories = [
+  "Food", "Transport", "Shopping", "Housing",
+  "Bills", "Health", "Entertainment", "Other"
+];
+
+// DATABASE
+// Version 2 adds budgets without deleting transactions.
+
 function openDB() {
   return new Promise((resolve, reject) => {
-    const r = indexedDB.open("PocketLedgerDB", 1);
+    const request = indexedDB.open("PocketLedgerDB", 2);
 
-    r.onupgradeneeded = () => {
-      if (!r.result.objectStoreNames.contains("transactions")) {
-        r.result.createObjectStore("transactions", {
+    request.onupgradeneeded = () => {
+      const database = request.result;
+
+      if (!database.objectStoreNames.contains("transactions")) {
+        database.createObjectStore("transactions", {
           keyPath: "id",
           autoIncrement: true
         });
       }
+
+      if (!database.objectStoreNames.contains("budgets")) {
+        database.createObjectStore("budgets", {
+          keyPath: "id"
+        });
+      }
     };
 
-    r.onsuccess = () => resolve(r.result);
-    r.onerror = () => reject(r.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
   });
 }
 
-function operation(mode, action) {
+function operation(storeName, mode, action) {
   return new Promise((resolve, reject) => {
-    const tx = db.transaction("transactions", mode);
-    const store = tx.objectStore("transactions");
-    const req = action(store);
+    const tx = db.transaction(storeName, mode);
+    const store = tx.objectStore(storeName);
+    const request = action(store);
 
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
     tx.onerror = () => reject(tx.error);
   });
 }
 
-const all = () => operation("readonly", s => s.getAll());
-const add = item => operation("readwrite", s => s.add(item));
-const remove = id => operation("readwrite", s => s.delete(id));
+const all = () =>
+  operation("transactions", "readonly", s => s.getAll());
+
+const add = item =>
+  operation("transactions", "readwrite", s => s.add(item));
+
+const remove = id =>
+  operation("transactions", "readwrite", s => s.delete(id));
+
+const allBudgets = () =>
+  operation("budgets", "readonly", s => s.getAll());
+
+const saveBudget = item =>
+  operation("budgets", "readwrite", s => s.put(item));
+
+const removeBudget = id =>
+  operation("budgets", "readwrite", s => s.delete(id));
+
+// DATE HELPERS
 
 function getPeriodRange(date, period) {
   const [year, month, day] = date.split("-").map(Number);
@@ -88,6 +124,52 @@ function periodDescription(date, period) {
 
   return String(year);
 }
+
+function monthLabel(monthValue) {
+  const [year, month] = monthValue.split("-").map(Number);
+
+  return new Date(year, month - 1, 1).toLocaleDateString(
+    "en-ID",
+    { month: "long", year: "numeric" }
+  );
+}
+
+// NAVIGATION
+
+function showScreen(screenId) {
+  document.querySelectorAll(".screen").forEach(screen => {
+    screen.classList.toggle("active", screen.id === screenId);
+  });
+
+  document.querySelectorAll(".nav-btn").forEach(button => {
+    button.classList.toggle(
+      "active",
+      button.dataset.screen === screenId
+    );
+  });
+
+  if (screenId === "budgetsScreen") {
+    renderBudgets().catch(console.error);
+  }
+
+  if (screenId === "homeScreen") {
+    render().catch(console.error);
+  }
+
+  if (screenId === "transactionsScreen") {
+    renderTransactions().catch(console.error);
+  }
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+document.querySelectorAll(".nav-btn").forEach(button => {
+  button.addEventListener("click", () => {
+    showScreen(button.dataset.screen);
+  });
+});
+
+// DASHBOARD
 
 async function render() {
   const selectedDate = $("month").value || localDate();
@@ -129,10 +211,8 @@ async function render() {
     );
   });
 
-  // Calculate active days
   const activeDays = new Set(rows.map(x => x.date)).size;
 
-  // Calculate insights
   const insights = [
     ["Transactions", String(rows.length)],
     ["Active days", String(activeDays)],
@@ -148,8 +228,8 @@ async function render() {
     ]
   ];
 
-  const insightContainer = $("periodInsights");
-  insightContainer.replaceChildren();
+  const container = $("periodInsights");
+  container.replaceChildren();
 
   for (const [label, value] of insights) {
     const card = document.createElement("div");
@@ -162,18 +242,28 @@ async function render() {
     amount.textContent = value;
 
     card.append(title, amount);
-    insightContainer.append(card);
+    container.append(card);
   }
+}
 
-  // Render transactions
+// TRANSACTIONS
+
+async function renderTransactions() {
+  const rows = (await all()).sort((a, b) =>
+    b.date.localeCompare(a.date) || b.id - a.id
+  );
+
+  $("count").textContent = `${rows.length} items`;
+
   const list = $("list");
   list.replaceChildren();
 
   if (!rows.length) {
     const empty = document.createElement("div");
     empty.className = "empty";
-    empty.textContent = "No transactions for this period yet.";
+    empty.textContent = "No transactions yet.";
     list.append(empty);
+    return;
   }
 
   for (const item of rows) {
@@ -210,7 +300,7 @@ async function render() {
     button.onclick = async () => {
       if (confirm("Delete this transaction?")) {
         await remove(item.id);
-        await render();
+        await refreshAll();
       }
     };
 
@@ -220,13 +310,257 @@ async function render() {
   }
 }
 
-// Add a transaction
+// BUDGET CALCULATIONS
+
+function budgetId(month, category) {
+  return `${category === "GLOBAL" ? "global" : "category"}:${month}:${category}`;
+}
+
+async function renderBudgets() {
+  const month = $("budgetMonth").value || currentMonth();
+
+  const [transactions, budgets] = await Promise.all([
+    all(),
+    allBudgets()
+  ]);
+
+  const expenses = transactions.filter(item =>
+    item.type === "expense" &&
+    item.date.startsWith(month)
+  );
+
+  const totalSpent = expenses.reduce(
+    (sum, item) => sum + item.amount, 0
+  );
+
+  const globalRecord = budgets.find(item =>
+    item.id === budgetId(month, "GLOBAL")
+  );
+
+  const globalLimit = globalRecord ? globalRecord.amount : 0;
+  const remaining = globalLimit - totalSpent;
+
+  $("globalSpent").textContent = money(totalSpent);
+
+  const [year, monthNumber] = month.split("-").map(Number);
+  const daysInMonth = new Date(year, monthNumber, 0).getDate();
+
+  $("dailyAverage").textContent =
+    money(totalSpent / daysInMonth);
+
+  $("budgetRemaining").textContent =
+    money(remaining);
+
+  $("budgetSummary").textContent = globalLimit > 0
+    ? `${money(totalSpent)} spent of ${money(globalLimit)}`
+    : "Set your monthly budget to track your spending.";
+
+  const usedPercent = globalLimit > 0
+    ? totalSpent / globalLimit * 100
+    : 0;
+
+  const remainingPercent = globalLimit > 0
+    ? Math.max(0, 100 - usedPercent)
+    : 0;
+
+  $("globalProgress").style.width =
+    `${Math.min(100, usedPercent)}%`;
+
+  $("budgetUsedPercent").textContent =
+    `${usedPercent.toFixed(1)}% used`;
+
+  $("budgetRemainingPercent").textContent =
+    `${remainingPercent.toFixed(1)}% remaining`;
+
+  $("globalProgress").classList.toggle(
+    "over-budget",
+    globalLimit > 0 && totalSpent > globalLimit
+  );
+
+  $("budgetRemaining").classList.toggle(
+    "over-budget-text",
+    globalLimit > 0 && remaining < 0
+  );
+
+  $("globalBudgetAmount").value =
+    globalLimit > 0 ? globalLimit : "";
+
+  const categoryRecords = budgets.filter(item =>
+    item.month === month && item.category !== "GLOBAL"
+  );
+
+  const container = $("categoryBudgetList");
+  container.replaceChildren();
+
+  if (!categoryRecords.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty";
+    empty.textContent =
+      "No category budgets yet. Add your first category budget above.";
+    container.append(empty);
+  }
+
+  for (const budget of categoryRecords) {
+    const spent = expenses
+      .filter(item => item.category === budget.category)
+      .reduce((sum, item) => sum + item.amount, 0);
+
+    const percent = budget.amount > 0
+      ? spent / budget.amount * 100
+      : 0;
+
+    const card = document.createElement("div");
+    card.className = "budget-card";
+
+    const top = document.createElement("div");
+    top.className = "budget-card-top";
+
+    const name = document.createElement("strong");
+    name.textContent = budget.category;
+
+    const numbers = document.createElement("span");
+    numbers.textContent =
+      `${money(spent)} / ${money(budget.amount)}`;
+
+    top.append(name, numbers);
+
+    const track = document.createElement("div");
+    track.className = "progress-track category-track";
+
+    const fill = document.createElement("div");
+    fill.className = "progress-fill";
+
+    if (percent > 100) fill.classList.add("over-budget");
+    fill.style.width = `${Math.min(100, percent)}%`;
+
+    track.append(fill);
+
+    const bottom = document.createElement("div");
+    bottom.className = "budget-card-bottom";
+
+    const status = document.createElement("span");
+    status.textContent = percent > 100
+      ? `${(percent - 100).toFixed(1)}% over limit`
+      : `${percent.toFixed(1)}% used`;
+
+    const categoryRemaining = document.createElement("span");
+    categoryRemaining.textContent =
+      `${money(budget.amount - spent)} remaining`;
+
+    bottom.append(status, categoryRemaining);
+
+    const actions = document.createElement("div");
+    actions.className = "budget-actions";
+
+    const edit = document.createElement("button");
+    edit.className = "delete";
+    edit.textContent = "Edit";
+
+    edit.onclick = () => {
+      $("budgetCategory").value = budget.category;
+      $("categoryBudgetAmount").value = budget.amount;
+      $("categoryBudgetAmount").focus();
+    };
+
+    const removeButton = document.createElement("button");
+    removeButton.className = "delete";
+    removeButton.textContent = "Remove";
+
+    removeButton.onclick = async () => {
+      if (confirm(`Remove the ${budget.category} budget?`)) {
+        await removeBudget(budget.id);
+        await renderBudgets();
+      }
+    };
+
+    actions.append(edit, removeButton);
+    card.append(top, track, bottom, actions);
+    container.append(card);
+  }
+
+  $("budgetMonth").value = month;
+}
+
+// SAVE GLOBAL BUDGET
+
+$("globalBudgetForm").onsubmit = async event => {
+  event.preventDefault();
+
+  const month = $("budgetMonth").value;
+  const amount = Number($("globalBudgetAmount").value);
+
+  if (!month || !Number.isSafeInteger(amount) || amount <= 0) {
+    $("globalBudgetStatus").textContent =
+      "Please enter a valid monthly budget.";
+    return;
+  }
+
+  try {
+    await saveBudget({
+      id: budgetId(month, "GLOBAL"),
+      month,
+      category: "GLOBAL",
+      amount,
+      updatedAt: new Date().toISOString()
+    });
+
+    $("globalBudgetStatus").textContent =
+      "Global budget saved successfully.";
+
+    await renderBudgets();
+  } catch (error) {
+    console.error(error);
+    $("globalBudgetStatus").textContent =
+      "Could not save the global budget.";
+  }
+};
+
+// SAVE CATEGORY BUDGET
+
+$("categoryBudgetForm").onsubmit = async event => {
+  event.preventDefault();
+
+  const month = $("budgetMonth").value;
+  const category = $("budgetCategory").value;
+  const amount = Number($("categoryBudgetAmount").value);
+
+  if (!month || !Number.isSafeInteger(amount) || amount <= 0) {
+    $("categoryBudgetStatus").textContent =
+      "Please enter a valid category limit.";
+    return;
+  }
+
+  try {
+    await saveBudget({
+      id: budgetId(month, category),
+      month,
+      category,
+      amount,
+      updatedAt: new Date().toISOString()
+    });
+
+    $("categoryBudgetAmount").value = "";
+
+    $("categoryBudgetStatus").textContent =
+      `${category} budget saved successfully.`;
+
+    await renderBudgets();
+  } catch (error) {
+    console.error(error);
+    $("categoryBudgetStatus").textContent =
+      "Could not save the category budget.";
+  }
+};
+
+// ADD TRANSACTION
+
 $("form").onsubmit = async event => {
   event.preventDefault();
 
   const description = $("description").value.trim();
   const amount = Number($("amount").value);
   const date = $("date").value;
+
   const type = document.querySelector(
     'input[name="type"]:checked'
   ).value;
@@ -254,22 +588,37 @@ $("form").onsubmit = async event => {
 
     $("form").reset();
     $("date").value = localDate();
-    $("month").value = date;
 
     $("status").textContent =
       "Transaction saved on this device.";
 
-    await render();
+    await refreshAll();
   } catch (error) {
-    $("status").textContent = "Could not save transaction.";
+    $("status").textContent =
+      "Could not save transaction.";
     console.error(error);
   }
 };
 
-// Change selected date
-$("month").onchange = () => render().catch(console.error);
+// REFRESH ALL SCREENS
 
-// Change dashboard period
+async function refreshAll() {
+  await render();
+  await renderTransactions();
+
+  if ($("budgetsScreen").classList.contains("active")) {
+    await renderBudgets();
+  }
+}
+
+// DASHBOARD CONTROLS
+
+$("month").onchange = () =>
+  render().catch(console.error);
+
+$("budgetMonth").onchange = () =>
+  renderBudgets().catch(console.error);
+
 document.querySelectorAll(".period-btn").forEach(button => {
   button.addEventListener("click", () => {
     dashboardPeriod = button.dataset.period;
@@ -277,7 +626,8 @@ document.querySelectorAll(".period-btn").forEach(button => {
   });
 });
 
-// Export all transactions
+// EXPORT ALL TRANSACTIONS
+
 $("export").onclick = async () => {
   const rows = await all();
 
@@ -287,9 +637,14 @@ $("export").onclick = async () => {
   const csv = [
     ["Date", "Type", "Description", "Category", "Amount"]
       .map(cell).join(","),
-    ...rows.map(x =>
-      [x.date, x.type, x.description, x.category, x.amount]
-        .map(cell).join(",")
+    ...rows.map(item =>
+      [
+        item.date,
+        item.type,
+        item.description,
+        item.category,
+        item.amount
+      ].map(cell).join(",")
     )
   ].join("\r\n");
 
@@ -310,15 +665,17 @@ $("export").onclick = async () => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
-// Start application
+// START APPLICATION
+
 (async () => {
   try {
     db = await openDB();
 
     $("date").value = localDate();
     $("month").value = localDate();
+    $("budgetMonth").value = currentMonth();
 
-    await render();
+    await refreshAll();
 
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
@@ -327,6 +684,8 @@ $("export").onclick = async () => {
     }
   } catch (error) {
     console.error(error);
-    alert("Unable to open local storage. Check Safari settings.");
+    alert(
+      "Unable to open local storage. Your existing data has not been intentionally deleted. Check Safari settings."
+    );
   }
 })();
