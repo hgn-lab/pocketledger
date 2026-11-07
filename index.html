@@ -1,1 +1,114 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#203e32"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="PocketLedger"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="stylesheet" href="styles.css"><title>PocketLedger</title></head><body><main class="app"><header><div><small>PERSONAL FINANCE</small><h1>PocketLedger<span>.</span></h1></div><button id="export" class="secondary">Export CSV</button></header><div class="month"><b>Overview</b><input id="month" type="month"></div><section class="balance"><small>MONTHLY BALANCE</small><h2 id="balance">Rp0</h2><div class="metrics"><div><small>Income</small><strong id="income">Rp0</strong></div><div><small>Expenses</small><strong id="expenses">Rp0</strong></div></div></section><h3>New transaction</h3><form id="form"><div class="switch"><label><input type="radio" name="type" value="expense" checked> Expense</label><label><input type="radio" name="type" value="income"> Income</label></div><label>Description<input id="description" maxlength="80" placeholder="Groceries" required></label><div class="two"><label>Amount (IDR)<input id="amount" type="number" min="1" max="9007199254740991" step="1" required></label><label>Date<input id="date" type="date" required></label></div><label>Category<select id="category"><option>Food</option><option>Transport</option><option>Shopping</option><option>Housing</option><option>Bills</option><option>Health</option><option>Entertainment</option><option>Salary</option><option>Business</option><option>Investment</option><option>Other</option></select></label><button class="primary">Add transaction</button><p id="status" role="status"></p></form><div class="heading"><h3>Transactions</h3><small id="count">0 items</small></div><section id="list" class="list"></section><footer>Stored locally on this device. Export regularly.</footer></main><script src="app.js"></script></body></html>
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#203e32">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PocketLedger">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="styles.css">
+<title>PocketLedger</title>
+</head>
+<body>
+<main class="app">
+  <header>
+    <div>
+      <small>PERSONAL FINANCE</small>
+      <h1>PocketLedger<span>.</span></h1>
+    </div>
+    <button id="export" class="secondary">Export CSV</button>
+  </header>
+
+  <div class="month">
+    <b>Overview</b>
+    <input id="month" type="date">
+  </div>
+
+  <nav class="period-tabs" aria-label="Dashboard period">
+    <button type="button" class="period-btn" data-period="daily">Daily</button>
+    <button type="button" class="period-btn active" data-period="monthly">Monthly</button>
+    <button type="button" class="period-btn" data-period="yearly">Yearly</button>
+  </nav>
+
+  <p id="dashboardSubtitle" class="dashboard-subtitle">
+    Monthly overview
+  </p>
+
+  <section class="balance">
+    <small id="balanceLabel">MONTHLY BALANCE</small>
+    <h2 id="balance">Rp0</h2>
+    <div class="metrics">
+      <div>
+        <small>Income</small>
+        <strong id="income">Rp0</strong>
+      </div>
+      <div>
+        <small>Expenses</small>
+        <strong id="expenses">Rp0</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-heading">
+      <h3>Period insights</h3>
+    </div>
+    <div id="periodInsights" class="insights-grid"></div>
+  </section>
+
+  <h3>New transaction</h3>
+  <form id="form">
+    <div class="switch">
+      <label><input type="radio" name="type" value="expense" checked> Expense</label>
+      <label><input type="radio" name="type" value="income"> Income</label>
+    </div>
+
+    <label>Description
+      <input id="description" maxlength="80" placeholder="Groceries" required>
+    </label>
+
+    <div class="two">
+      <label>Amount (IDR)
+        <input id="amount" type="number" min="1" max="9007199254740991" step="1" required>
+      </label>
+      <label>Date
+        <input id="date" type="date" required>
+      </label>
+    </div>
+
+    <label>Category
+      <select id="category">
+        <option>Food</option>
+        <option>Transport</option>
+        <option>Shopping</option>
+        <option>Housing</option>
+        <option>Bills</option>
+        <option>Health</option>
+        <option>Entertainment</option>
+        <option>Salary</option>
+        <option>Business</option>
+        <option>Investment</option>
+        <option>Other</option>
+      </select>
+    </label>
+
+    <button class="primary" type="submit">Add transaction</button>
+    <p id="status" role="status"></p>
+  </form>
+
+  <div class="heading">
+    <h3>Transactions</h3>
+    <small id="count">0 items</small>
+  </div>
+
+  <section id="list" class="list"></section>
+
+  <footer>Stored locally on this device. Export regularly.</footer>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
+
