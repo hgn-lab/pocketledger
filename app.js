@@ -1057,19 +1057,32 @@ $("deleteAccount").onclick = async () => {
   }
   const confirmed = await confirmArchiveAccount(account.name);
   if (!confirmed) return;
+
   try {
-    await operation("accounts", "readwrite", store => {
-      account.active = false;
-      account.archivedAt = new Date().toISOString();
-      return store.put(account);
+    const tx = db.transaction("accounts", "readwrite");
+    const store = tx.objectStore("accounts");
+    account.active = false;
+    account.archivedAt = new Date().toISOString();
+    store.put(account);
+    await new Promise((resolve, reject) => {
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error || new Error("Account archive failed."));
+      tx.onabort = () => reject(tx.error || new Error("Account archive was cancelled."));
     });
-    $("accountEditDialog").close();
-    await refreshAll();
-    showToast("Account archived. Its history is preserved.");
   } catch (error) {
-    console.error(error);
-    $("editAccountStatus").textContent = "Could not archive account.";
-    showToast("Could not archive account.", "error");
+    console.error("Account archive database error:", error);
+    $("editAccountStatus").textContent = error.message || "Could not archive account.";
+    showToast("Account could not be archived.", "error");
+    return;
+  }
+
+  $("accountEditDialog").close();
+  showToast("Account archived. Its history is preserved.");
+  try {
+    await refreshAll();
+  } catch (error) {
+    console.error("Account archived, but screen refresh failed:", error);
+    showToast("Account archived. Refresh the page to update the list.", "error");
   }
 };
 $("editAccountType").onchange=()=>{
