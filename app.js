@@ -1,6 +1,21 @@
 
 const $ = id => document.getElementById(id);
 
+let toastTimer;
+function showToast(message, type = "success") {
+  const toast = $("appToast");
+  if (!toast) return;
+  toast.textContent = message;
+  toast.dataset.type = type;
+  toast.classList.add("visible");
+  toast.setAttribute("aria-hidden", "false");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    toast.classList.remove("visible");
+    toast.setAttribute("aria-hidden", "true");
+  }, 3200);
+}
+
 const CATEGORY_ICON_PATHS = {
   Food: '<path d="M3 2v7a3 3 0 0 0 3 3v10M6 2v5M9 2v5M6 12v10M18 2v20M18 2c-2 2-3 5-3 8h3"/>',
   Transport: '<path d="M5 17h14l1-6-2-5H6l-2 5 1 6Z"/><path d="M5 11h14M7 17v3m10-3v3M7 14h.01M17 14h.01"/>',
@@ -1084,6 +1099,7 @@ $("accountForm").onsubmit = async event => {
     });
     $("accountForm").reset(); $("openingDate").value=localDate();
     $("accountStatus").textContent="Account added. Opening balance is now included in your account totals.";
+    showToast("Account added successfully.");
     await refreshAll();
   } catch(error) { console.error(error); $("accountStatus").textContent="Could not save account."; }
 };
@@ -1111,6 +1127,7 @@ $("transferForm").onsubmit = async event => {
     });
     $("transferForm").reset(); $("transferDate").value=localDate();
     $("transferStatus").textContent="Transfer saved. Account balances updated.";
+    showToast("Transfer saved.");
     await refreshAll();
   } catch(error) { console.error(error); $("transferStatus").textContent=error.message || "Could not save transfer."; }
 };
@@ -1182,6 +1199,7 @@ $("form").onsubmit = async event => {
 
     $("status").textContent =
       "Transaction saved on this device.";
+    showToast("Transaction saved on this device.");
 
     await refreshAll();
   } catch (error) {
@@ -1289,6 +1307,7 @@ $("export").onclick = async () => {
   link.remove();
 
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast("CSV export is ready.");
 };
 
 // START APPLICATION
