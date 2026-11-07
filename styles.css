@@ -1132,3 +1132,36 @@ input[type="date"], input[type="month"] {
 .settings-screen .backup-section { margin-top: 22px; }
 .settings-screen .settings-note { margin: 16px 2px 0; }
 @media(max-width:360px) { .settings-tabs .period-btn { font-size: 10px; padding-left: 2px; padding-right: 2px; } }
+
+
+/* APP TOAST — brief, accessible confirmation feedback. */
+.app-toast {
+  position: fixed;
+  z-index: 1000;
+  left: 50%;
+  bottom: calc(88px + env(safe-area-inset-bottom));
+  width: max-content;
+  max-width: min( calc(100vw - 32px), 420px );
+  padding: 13px 18px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 14px;
+  background: #203e32;
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(18,39,28,.24);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 12px);
+  transition: opacity .2s ease, transform .2s ease;
+}
+.app-toast.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.app-toast[data-type="error"] { background: #8f382f; }
+@media (prefers-reduced-motion: reduce) {
+  .app-toast { transition: none; }
+}
