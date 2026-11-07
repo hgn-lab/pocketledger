@@ -88,11 +88,11 @@ const categories = [
 ];
 
 // DATABASE
-// Version 2 adds budgets without deleting transactions.
+// Version 3 adds accounts and ledger records without deleting existing data.
 
 function openDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open("PocketLedgerDB", 2);
+    const request = indexedDB.open("PocketLedgerDB", 3);
 
     request.onupgradeneeded = () => {
       const database = request.result;
@@ -108,6 +108,20 @@ function openDB() {
         database.createObjectStore("budgets", {
           keyPath: "id"
         });
+      }
+
+      if (!database.objectStoreNames.contains("accounts")) {
+        const accounts = database.createObjectStore("accounts", { keyPath: "id" });
+        accounts.createIndex("byActive", "active", { unique: false });
+      }
+      if (!database.objectStoreNames.contains("journalEntries")) {
+        const entries = database.createObjectStore("journalEntries", { keyPath: "id" });
+        entries.createIndex("byAccount", "accountId", { unique: false });
+        entries.createIndex("byDate", "date", { unique: false });
+      }
+      if (!database.objectStoreNames.contains("transfers")) {
+        const transfers = database.createObjectStore("transfers", { keyPath: "id" });
+        transfers.createIndex("byDate", "date", { unique: false });
       }
     };
 
@@ -145,6 +159,40 @@ const saveBudget = item =>
 
 const removeBudget = id =>
   operation("budgets", "readwrite", s => s.delete(id));
+
+// Multi-store writes resolve only after IndexedDB commits successfully.
+function atomicWrite(storeNames, writer) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeNames, "readwrite");
+    let result;
+    try { result = writer(tx); } catch (error) { tx.abort(); reject(error); return; }
+    tx.oncomplete = () => resolve(result);
+    tx.onerror = () => reject(tx.error || new Error("Database write failed."));
+    tx.onabort = () => reject(tx.error || new Error("Database write was cancelled."));
+  });
+}
+const allAccounts = () => operation("accounts", "readonly", s => s.getAll());
+const allJournalEntries = () => operation("journalEntries", "readonly", s => s.getAll());
+const allTransfers = () => operation("transfers", "readonly", s => s.getAll());
+const makeId = prefix => `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+
+async function accountBalances() {
+  const [accounts, entries] = await Promise.all([allAccounts(), allJournalEntries()]);
+  return accounts.map(account => {
+    const movement = entries.filter(entry => entry.accountId === account.id)
+      .reduce((sum, entry) => sum + Number(entry.balanceDelta || 0), 0);
+    return { ...account, balance: Number(account.openingBalance || 0) + movement };
+  });
+}
+
+function ledgerEntry(account, amount, direction, date, details) {
+  // balanceDelta is positive when the account's displayed balance increases.
+  const assetDelta = direction === "increase" ? amount : -amount;
+  const balanceDelta = account.classification === "liability" ? -assetDelta : assetDelta;
+  return { id: makeId("je"), accountId: account.id, amount,
+    side: direction === "increase" ? "debit" : "credit",
+    balanceDelta, date, ...details, createdAt: new Date().toISOString() };
+}
 
 // DATE HELPERS
 
@@ -223,6 +271,9 @@ function showScreen(screenId) {
   }
   if (screenId === "analyticsScreen") {
     renderAnalytics().catch(console.error);
+  }
+  if (screenId === "accountsScreen") {
+    renderAccounts().catch(console.error);
   }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -348,7 +399,7 @@ async function renderTransactions() {
 
     const meta = document.createElement("div");
     meta.className = "meta";
-    meta.textContent = `${item.category} · ${item.date}`;
+    meta.textContent = `${item.category} · ${item.date} · ${item.accountId ? "Account linked" : "Unassigned"}`;
 
     info.append(title, meta);
 
@@ -783,6 +834,134 @@ $("categoryBudgetForm").onsubmit = async event => {
   }
 };
 
+// ACCOUNTS & LEDGER
+async function renderAccountSelectors() {
+  const accounts = (await accountBalances()).filter(account => account.active !== false);
+  const select = $("transactionAccount");
+  if (select) {
+    const previous = select.value;
+    select.replaceChildren(new Option("Unassigned — excluded from account balances", ""));
+    accounts.forEach(account => select.add(new Option(`${account.name} · ${money(account.balance)}`, account.id)));
+    if (accounts.some(account => account.id === previous)) select.value = previous;
+  }
+  const from = $("transferFrom"), to = $("transferTo");
+  if (from && to) {
+    const oldFrom = from.value, oldTo = to.value;
+    [from, to].forEach(select => select.replaceChildren(new Option("Choose account", "")));
+    accounts.forEach(account => {
+      from.add(new Option(`${account.name} (${account.type})`, account.id));
+      to.add(new Option(`${account.name} (${account.type})`, account.id));
+    });
+    from.value = oldFrom; to.value = oldTo;
+  }
+}
+
+async function renderAccounts() {
+  const accounts = await accountBalances();
+  const list = $("accountList");
+  list.replaceChildren();
+  const assets = accounts.filter(a => a.classification === "asset" && a.active !== false);
+  const liabilities = accounts.filter(a => a.classification === "liability" && a.active !== false);
+  const totalAssets = assets.reduce((s,a) => s + a.balance, 0);
+  const totalLiabilities = liabilities.reduce((s,a) => s + a.balance, 0);
+  setSensitiveText($("totalAssets"), money(totalAssets));
+  setSensitiveText($("totalLiabilities"), money(totalLiabilities));
+  setSensitiveText($("netWorth"), money(totalAssets-totalLiabilities));
+  if (!accounts.length) {
+    const empty = document.createElement("p"); empty.className = "empty";
+    empty.textContent = "No accounts yet. Add your first bank, cash, wallet, savings or liability account below.";
+    list.append(empty);
+  }
+  accounts.forEach(account => {
+    const row = document.createElement("div"); row.className = "account-row";
+    const info = document.createElement("div");
+    const name = document.createElement("strong"); name.textContent = account.name;
+    const meta = document.createElement("small"); meta.textContent = `${account.type} · ${account.active === false ? "Archived" : account.classification === "liability" ? "Liability" : "Asset"}`;
+    info.append(name, meta);
+    const value = document.createElement("strong"); value.className = "account-value";
+    setSensitiveText(value, money(account.balance));
+    if (account.balance < 0) value.classList.add("negative");
+    row.append(info, value);
+    if (account.balance < 0) { const warning=document.createElement("small"); warning.className="account-warning"; warning.textContent="Negative balance — review this account"; row.append(warning); }
+    const archive = document.createElement("button"); archive.className="delete";
+    archive.textContent = account.active === false ? "Archived" : "Archive";
+    archive.disabled = account.active === false;
+    archive.onclick = async () => {
+      if (!confirm(`Archive ${account.name}? Historical entries will be kept.`)) return;
+      await operation("accounts", "readwrite", s => s.put({...account, active:false, updatedAt:new Date().toISOString()}));
+      await refreshAll();
+    };
+    row.append(archive); list.append(row);
+  });
+  await renderAccountSelectors();
+}
+
+$("accountType").addEventListener("change", () => {
+  const liabilityTypes = ["Credit card", "Personal loan", "Mortgage", "Other liability"];
+  $("accountClassification").value = liabilityTypes.includes($("accountType").value) ? "liability" : "asset";
+});
+
+$("accountForm").onsubmit = async event => {
+  event.preventDefault();
+  const name = $("accountName").value.trim();
+  const openingBalance = Number($("openingBalance").value || 0);
+  const classification = $("accountClassification").value;
+  const type = $("accountType").value;
+  if (!name || !Number.isSafeInteger(openingBalance) || openingBalance < 0) {
+    $("accountStatus").textContent = "Enter an account name and a valid non-negative opening balance."; return;
+  }
+  const account = { id:makeId("account"), name, type, classification,
+    openingBalance, openingBalanceDate:$("openingDate").value || localDate(),
+    currency:"IDR", active:true, createdAt:new Date().toISOString() };
+  try {
+    const openingGroup = makeId("opening");
+    const openingSide = classification === "asset" ? "debit" : "credit";
+    const openingEntries = openingBalance > 0 ? [
+      { id:makeId("je"), groupId:openingGroup, accountId:account.id, systemAccount:null,
+        side:openingSide, amount:openingBalance, balanceDelta:0, date:account.openingBalanceDate,
+        kind:"opening-balance", createdAt:new Date().toISOString() },
+      { id:makeId("je"), groupId:openingGroup, accountId:null, systemAccount:"Opening Balance Equity",
+        side:openingSide === "debit" ? "credit" : "debit", amount:openingBalance,
+        balanceDelta:0, date:account.openingBalanceDate, kind:"opening-balance",
+        createdAt:new Date().toISOString() }
+    ] : [];
+    await atomicWrite(["accounts", "journalEntries"], tx => {
+      tx.objectStore("accounts").add(account);
+      openingEntries.forEach(entry => tx.objectStore("journalEntries").add(entry));
+    });
+    $("accountForm").reset(); $("openingDate").value=localDate();
+    $("accountStatus").textContent="Account added. Opening balance is now included in your account totals.";
+    await refreshAll();
+  } catch(error) { console.error(error); $("accountStatus").textContent="Could not save account."; }
+};
+
+$("transferForm").onsubmit = async event => {
+  event.preventDefault();
+  const fromId=$("transferFrom").value, toId=$("transferTo").value;
+  const amount=Number($("transferAmount").value), date=$("transferDate").value;
+  const description=$("transferDescription").value.trim() || "Account transfer";
+  if (!fromId || !toId || fromId===toId || !Number.isSafeInteger(amount) || amount<=0 || !date) {
+    $("transferStatus").textContent="Choose two different accounts and enter a valid amount and date."; return;
+  }
+  try {
+    const accounts=await allAccounts();
+    const from=accounts.find(a=>a.id===fromId), to=accounts.find(a=>a.id===toId);
+    if (!from || !to || from.active===false || to.active===false) throw new Error("Choose active accounts.");
+    if (from.classification!=="asset") throw new Error("Transfers must start from an asset account. Use an asset account to pay a liability.");
+    const transfer={id:makeId("transfer"), fromAccountId:fromId,toAccountId:toId,amount,date,description,createdAt:new Date().toISOString()};
+    const groupId=makeId("journal");
+    const entries=[ledgerEntry(from,amount,"decrease",date,{groupId,transferId:transfer.id,kind:"transfer"}),
+      ledgerEntry(to,amount,"increase",date,{groupId,transferId:transfer.id,kind:to.classification==="liability"?"liability-payment":"transfer"})];
+    await atomicWrite(["transfers","journalEntries"],tx=>{
+      tx.objectStore("transfers").add(transfer);
+      entries.forEach(entry=>tx.objectStore("journalEntries").add(entry));
+    });
+    $("transferForm").reset(); $("transferDate").value=localDate();
+    $("transferStatus").textContent="Transfer saved. Account balances updated.";
+    await refreshAll();
+  } catch(error) { console.error(error); $("transferStatus").textContent=error.message || "Could not save transfer."; }
+};
+
 // ADD TRANSACTION
 
 $("form").onsubmit = async event => {
@@ -808,14 +987,38 @@ $("form").onsubmit = async event => {
   }
 
   try {
-    await add({
-      description,
-      amount,
-      date,
-      type,
+    const accountId = $("transactionAccount").value || null;
+    const transaction = {
+      description, amount, date, type, accountId,
       category: $("category").value,
       createdAt: new Date().toISOString()
-    });
+    };
+    if (accountId) {
+      const account = (await allAccounts()).find(item => item.id === accountId && item.active !== false);
+      if (!account) throw new Error("Choose an active account.");
+      if (type === "income" && account.classification !== "asset") throw new Error("Income must be received into an asset account.");
+      if (type === "expense" && account.classification === "liability" && account.type !== "Credit card") throw new Error("Only credit card accounts can be selected for an expense.");
+      await atomicWrite(["transactions", "journalEntries"], tx => {
+        const request = tx.objectStore("transactions").add(transaction);
+        request.onsuccess = () => {
+          const direction = type === "income" ? "increase" : "decrease";
+          const groupId = makeId("journal");
+          const entry = ledgerEntry(account, amount, direction, date,
+            { groupId, transactionId: request.result, kind: type, category: transaction.category, description });
+          const counterpart = {
+            id:makeId("je"), groupId, accountId:null,
+            systemAccount:type === "income" ? `Income:${transaction.category}` : `Expense:${transaction.category}`,
+            side:type === "income" ? "credit" : "debit", amount, balanceDelta:0, date,
+            transactionId:request.result, kind:type, category:transaction.category,
+            description, createdAt:new Date().toISOString()
+          };
+          tx.objectStore("journalEntries").add(entry);
+          tx.objectStore("journalEntries").add(counterpart);
+        };
+      });
+    } else {
+      await add(transaction);
+    }
 
     $("form").reset();
     $("date").value = localDate();
@@ -836,6 +1039,7 @@ $("form").onsubmit = async event => {
 async function refreshAll() {
   await render();
   await renderTransactions();
+  await renderAccounts();
 
   if ($("budgetsScreen").classList.contains("active")) {
     await renderBudgets();
@@ -908,6 +1112,8 @@ $("export").onclick = async () => {
     db = await openDB();
 
     $("date").value = localDate();
+    $("openingDate").value = localDate();
+    $("transferDate").value = localDate();
     $("month").value = localDate();
     $("budgetMonth").value = currentMonth();
 $("analyticsMonth").value = currentMonth();
