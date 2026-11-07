@@ -3,6 +3,7 @@ name: Validate PocketLedger
 on:
   push:
     branches:
+      - main
       - feature/supabase-auth-gate
   pull_request:
     branches:
@@ -32,6 +33,10 @@ jobs:
             ['four bottom navigation tabs', (html.match(/class="nav-btn/g) || []).length === 4],
             ['analytics embedded in Home', html.indexOf('id="analyticsScreen"') < html.indexOf('<!-- BUDGET SCREEN -->')],
             ['accounts embedded in Settings', html.indexOf('id="accountsScreen"') > html.indexOf('id="settingsScreen"')],
+            ['CSV export is only in Settings', html.indexOf('id="export"') > html.indexOf('id="settingsScreen"')],
+            ['Settings has three segmented sections', ['accounts','cards','liabilities'].every(tab => html.includes('data-settings-tab="' + tab + '"'))],
+            ['liabilities have their own list', html.includes('id="liabilityList"')],
+            ['secure backup follows CSV export', html.indexOf('backup-section') > html.indexOf('id="export"')],
             ['service worker does not cache auth module', !sw.includes('"./auth.js"')],
             ['service worker cache version refreshed', sw.includes('pocketledger-v12')]
           ];
