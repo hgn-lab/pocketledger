@@ -554,10 +554,19 @@ async function renderBudgets() {
   $("budgetRemainingPercent").textContent =
     `${remainingPercent.toFixed(1)}% remaining`;
 
+  const globalAlert = globalLimit > 0 && usedPercent >= 75;
+  $("globalProgress").classList.toggle("budget-warning", globalAlert);
   $("globalProgress").classList.toggle(
     "over-budget",
     globalLimit > 0 && totalSpent > globalLimit
   );
+  const globalAlertElement = $("globalBudgetAlert");
+  globalAlertElement.textContent = globalAlert
+    ? (usedPercent >= 100
+        ? `⚠ Monthly budget exceeded by ${(usedPercent - 100).toFixed(1)}%.`
+        : `⚠ Budget alert: ${usedPercent.toFixed(1)}% used. You have ${money(Math.max(0, remaining))} left.`)
+    : "";
+  globalAlertElement.classList.toggle("visible", globalAlert);
 
   $("budgetRemaining").classList.toggle(
     "over-budget-text",
@@ -616,6 +625,7 @@ async function renderBudgets() {
     const fill = document.createElement("div");
     fill.className = "progress-fill";
 
+    if (percent >= 75) fill.classList.add("budget-warning");
     if (percent > 100) fill.classList.add("over-budget");
     fill.style.width = `${Math.min(100, percent)}%`;
 
@@ -625,9 +635,12 @@ async function renderBudgets() {
     bottom.className = "budget-card-bottom";
 
     const status = document.createElement("span");
-    status.textContent = percent > 100
-      ? `${(percent - 100).toFixed(1)}% over limit`
-      : `${percent.toFixed(1)}% used`;
+    status.textContent = percent >= 100
+      ? `⚠ ${(percent - 100).toFixed(1)}% over limit`
+      : percent >= 75
+        ? `⚠ Budget alert · ${percent.toFixed(1)}% used`
+        : `${percent.toFixed(1)}% used`;
+    status.classList.toggle("budget-alert-text", percent >= 75);
 
     const categoryRemaining = document.createElement("span");
     setSensitiveText(
