@@ -137,6 +137,46 @@
     </section>
   </section>
 
+  <!-- ANALYTICS SCREEN -->
+  <section id="analyticsScreen" class="screen">
+    <div class="month">
+      <b>Financial insights</b>
+      <input id="analyticsMonth" type="month">
+    </div>
+
+    <section class="section">
+      <h3>Income vs. expenses</h3>
+      <div class="insights-grid">
+        <div class="insight-card">
+          <span>Total income</span>
+          <strong id="analyticsIncome">Rp0</strong>
+        </div>
+        <div class="insight-card">
+          <span>Total expenses</span>
+          <strong id="analyticsExpenses">Rp0</strong>
+        </div>
+        <div class="insight-card">
+          <span>Net savings</span>
+          <strong id="analyticsSavings">Rp0</strong>
+        </div>
+        <div class="insight-card">
+          <span>Savings rate</span>
+          <strong id="analyticsSavingsRate">—</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h3>Spending by category</h3>
+      <div id="categoryAnalytics" class="analytics-list"></div>
+    </section>
+
+    <section class="section">
+      <h3>Monthly spending trend</h3>
+      <div id="spendingTrend" class="trend-chart"></div>
+    </section>
+  </section>
+
   <!-- TRANSACTIONS SCREEN -->
   <section id="transactionsScreen" class="screen">
     <h3>New transaction</h3>
@@ -190,24 +230,26 @@
     <section id="list" class="list"></section>
   </section>
 
+ 
   <!-- BOTTOM NAVIGATION -->
   <nav class="bottom-nav" aria-label="Main navigation">
     <button class="nav-btn active" data-screen="homeScreen">
       <span>⌂</span>
       Home
     </button>
+
     <button class="nav-btn" data-screen="budgetsScreen">
       <span>▤</span>
       Budgets
     </button>
+
+    <button class="nav-btn" data-screen="analyticsScreen">
+      <span>▥</span>
+      Analytics
+    </button>
+
     <button class="nav-btn" data-screen="transactionsScreen">
       <span>＋</span>
       Transactions
     </button>
   </nav>
-
-  <footer>Stored locally on this device. Export regularly.</footer>
-</main>
-<script src="app.js"></script>
-</body>
-</html>
