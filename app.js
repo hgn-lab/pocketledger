@@ -1005,7 +1005,65 @@ async function renderAccounts() {
     const value=document.createElement("strong"); value.className="account-value"; setSensitiveText(value,money(account.balance));
     row.append(info,value); liabilityList.append(row);
   });
+  const archived = accounts.filter(account => account.active === false)
+    .sort((left, right) => String(right.archivedAt || "").localeCompare(String(left.archivedAt || "")));
+  const archiveList = $("archivedAccountList");
+  const archiveCount = $("archivedAccountCount");
+  archiveList.replaceChildren();
+  archiveCount.textContent = String(archived.length);
+  if (!archived.length) {
+    const empty = document.createElement("p");
+    empty.className = "empty";
+    empty.textContent = "No archived accounts.";
+    archiveList.append(empty);
+  }
+  archived.forEach(account => {
+    const row = document.createElement("div");
+    row.className = "archived-account-row";
+    const info = document.createElement("div");
+    info.className = "archived-account-info";
+    const name = document.createElement("strong");
+    name.textContent = account.name;
+    const meta = document.createElement("small");
+    meta.textContent = `${account.type} · ${account.classification === "liability" ? "Liability" : "Asset"} · Archived`;
+    info.append(name, meta);
+    const restore = document.createElement("button");
+    restore.type = "button";
+    restore.className = "restore-account-button";
+    restore.textContent = "Restore";
+    restore.setAttribute("aria-label", `Restore ${account.name}`);
+    restore.addEventListener("click", () => restoreArchivedAccount(account.id));
+    row.append(info, restore);
+    archiveList.append(row);
+  });
   await renderAccountSelectors();
+}
+
+async function restoreArchivedAccount(accountId) {
+  const accounts = await allAccounts();
+  const account = accounts.find(item => item.id === accountId && item.active === false);
+  if (!account) {
+    showToast("Archived account not found.", "error");
+    return;
+  }
+  try {
+    const tx = db.transaction("accounts", "readwrite");
+    const store = tx.objectStore("accounts");
+    account.active = true;
+    delete account.archivedAt;
+    account.restoredAt = new Date().toISOString();
+    store.put(account);
+    await new Promise((resolve, reject) => {
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error || new Error("Restore failed."));
+      tx.onabort = () => reject(tx.error || new Error("Restore was cancelled."));
+    });
+    await refreshAll();
+    showToast(`${account.name} restored successfully.`);
+  } catch (error) {
+    console.error("Account restore failed:", error);
+    showToast("Could not restore account.", "error");
+  }
 }
 
 function confirmArchiveAccount(accountName) {
