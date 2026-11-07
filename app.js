@@ -766,68 +766,113 @@ async function renderAnalytics() {
     categoryContainer.append(row);
   }
 
-  // Six-month spending trend, ending at selected month
-  const [year, month] = selectedMonth.split("-").map(Number);
+  // Previous-month comparison. Missing prior data is shown explicitly.
+  const [selectedYear, selectedMonthNumber] = selectedMonth.split("-").map(Number);
+  const previousDate = new Date(selectedYear, selectedMonthNumber - 2, 1);
+  const previousKey = `${previousDate.getFullYear()}-${String(previousDate.getMonth() + 1).padStart(2, "0")}`;
+  const previousRows = transactions.filter(item => item.date.startsWith(previousKey));
+  const previousIncome = previousRows.filter(item => item.type === "income").reduce((sum, item) => sum + item.amount, 0);
+  const previousExpenses = previousRows.filter(item => item.type === "expense").reduce((sum, item) => sum + item.amount, 0);
+  const previousSavings = previousIncome - previousExpenses;
+  const comparison = $("monthComparison");
+  comparison.replaceChildren();
 
-  const trendMonths = [];
+  const changeLabel = (current, previous) => {
+    if (previous === 0) return current === 0 ? "No change" : "No prior data";
+    const change = (current - previous) / Math.abs(previous) * 100;
+    return `${change > 0 ? "+" : ""}${change.toFixed(1)}% vs last month`;
+  };
+  const comparisonCards = [
+    ["Income", income, previousIncome, false],
+    ["Expenses", expenses, previousExpenses, true],
+    ["Net savings", savings, previousSavings, false]
+  ];
+  for (const [label, current, previous, lowerIsBetter] of comparisonCards) {
+    const card = document.createElement("div");
+    card.className = "insight-card comparison-card";
+    const title = document.createElement("span");
+    title.textContent = label;
+    const value = document.createElement("strong");
+    setSensitiveText(value, money(current));
+    const change = document.createElement("small");
+    change.textContent = changeLabel(current, previous);
+    if (previous !== 0) {
+      const delta = current - previous;
+      if (delta !== 0) change.classList.add((lowerIsBetter ? delta < 0 : delta > 0) ? "comparison-good" : "comparison-caution");
+    }
+    card.append(title, value, change);
+    comparison.append(card);
+  }
+  const rateCard = document.createElement("div");
+  rateCard.className = "insight-card comparison-card";
+  const rateTitle = document.createElement("span");
+  rateTitle.textContent = "Savings rate";
+  const rateValue = document.createElement("strong");
+  rateValue.textContent = savingsRate;
+  const rateChange = document.createElement("small");
+  const previousRate = previousIncome > 0 ? previousSavings / previousIncome * 100 : null;
+  const currentRate = income > 0 ? savings / income * 100 : null;
+  rateChange.textContent = previousRate === null || currentRate === null
+    ? "Not enough income data"
+    : `${currentRate - previousRate > 0 ? "+" : ""}${(currentRate - previousRate).toFixed(1)} percentage points`;
+  rateCard.append(rateTitle, rateValue, rateChange);
+  comparison.append(rateCard);
 
-  for (let offset = 5; offset >= 0; offset--) {
-    const date = new Date(year, month - 1 - offset, 1);
-
-    const key =
-      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-
-    const label = date.toLocaleDateString("en-ID", {
-      month: "short"
-    });
-
-    const spent = transactions
-      .filter(item =>
-        item.type === "expense" &&
-        item.date.startsWith(key)
-      )
-      .reduce((sum, item) => sum + item.amount, 0);
-
-    trendMonths.push({ key, label, spent });
+  const categoryLeader = Object.entries(categoryTotals).sort((a,b) => b[1]-a[1])[0];
+  const insight = $("financialInsight");
+  if (!monthRows.length) {
+    insight.textContent = "No transactions recorded for this month yet.";
+  } else if (categoryLeader && previousRows.length && previousExpenses > 0) {
+    const expenseChange = (expenses - previousExpenses) / previousExpenses * 100;
+    insight.textContent = `${categoryLeader[0]} is your largest spending category at ${money(categoryLeader[1])}. Total expenses are ${Math.abs(expenseChange).toFixed(1)}% ${expenseChange > 0 ? "higher" : expenseChange < 0 ? "lower" : "unchanged"} than last month.`;
+  } else if (categoryLeader) {
+    insight.textContent = `${categoryLeader[0]} is your largest spending category at ${money(categoryLeader[1])}. More history will unlock month-to-month insights.`;
+  } else {
+    insight.textContent = "No expenses recorded this month. Keep tracking to build your spending history.";
   }
 
+  // Six-month income and expense comparison.
+  const trendMonths = [];
+  for (let offset = 5; offset >= 0; offset--) {
+    const date = new Date(selectedYear, selectedMonthNumber - 1 - offset, 1);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    const label = date.toLocaleDateString("en-ID", { month: "short" });
+    const rows = transactions.filter(item => item.date.startsWith(key));
+    trendMonths.push({
+      key, label,
+      income: rows.filter(item => item.type === "income").reduce((sum,item) => sum + item.amount,0),
+      expenses: rows.filter(item => item.type === "expense").reduce((sum,item) => sum + item.amount,0)
+    });
+  }
   const trendContainer = $("spendingTrend");
   trendContainer.replaceChildren();
-
-  const highestSpending = Math.max(
-    1,
-    ...trendMonths.map(item => item.spent)
-  );
-
+  const maxFlow = Math.max(1, ...trendMonths.flatMap(item => [item.income, item.expenses]));
   for (const item of trendMonths) {
-    const column = document.createElement("div");
-    column.className = "trend-column";
-
-    const amount = document.createElement("span");
-    amount.className = "trend-amount";
-    setSensitiveText(amount, money(item.spent));
-
-    const track = document.createElement("div");
-    track.className = "trend-bar-track";
-
-    const bar = document.createElement("div");
-    bar.className = "trend-bar";
-
-    bar.style.height =
-      `${item.spent / highestSpending * 100}%`;
-
-    if (item.key === selectedMonth) {
-      bar.classList.add("current-month");
-    }
-
-    track.append(bar);
-
-    const label = document.createElement("span");
-    label.className = "trend-label";
+    const row = document.createElement("div");
+    row.className = "cashflow-month";
+    const label = document.createElement("strong");
+    label.className = "cashflow-month-label";
     label.textContent = item.label;
-
-    column.append(amount, track, label);
-    trendContainer.append(column);
+    const bars = document.createElement("div");
+    bars.className = "cashflow-bars";
+    for (const [kind, amount] of [["income", item.income], ["expense", item.expenses]]) {
+      const line = document.createElement("div");
+      line.className = "cashflow-line";
+      const value = document.createElement("span");
+      value.className = "cashflow-value";
+      setSensitiveText(value, money(amount));
+      const track = document.createElement("div");
+      track.className = "cashflow-track";
+      const fill = document.createElement("div");
+      fill.className = `cashflow-fill ${kind}`;
+      fill.style.width = `${amount / maxFlow * 100}%`;
+      track.append(fill);
+      line.append(value, track);
+      bars.append(line);
+    }
+    if (item.key === selectedMonth) row.classList.add("current");
+    row.append(label, bars);
+    trendContainer.append(row);
   }
 }
 
