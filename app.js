@@ -282,16 +282,11 @@ function showScreen(screenId) {
 
   if (screenId === "homeScreen") {
     render().catch(console.error);
+    renderAnalytics().catch(console.error);
   }
 
   if (screenId === "transactionsScreen") {
     renderTransactions().catch(console.error);
-  }
-  if (screenId === "analyticsScreen") {
-    renderAnalytics().catch(console.error);
-  }
-  if (screenId === "accountsScreen") {
-    renderAccounts().catch(console.error);
   }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -1192,7 +1187,7 @@ async function refreshAll() {
     await renderBudgets();
   }
 
-  if ($("analyticsScreen").classList.contains("active")) {
+  if ($("homeScreen").classList.contains("active")) {
     await renderAnalytics();
   }
 }
