@@ -1300,3 +1300,53 @@ input[type="date"], input[type="month"] {
   color: #b4473d !important;
   font-weight: 700;
 }
+
+
+/* iPhone transaction form: keep native date controls inside their grid cell. */
+#transactionsScreen .two {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+#transactionsScreen .two > label {
+  min-width: 0;
+  width: 100%;
+}
+#transactionsScreen .two input[type="number"],
+#transactionsScreen .two input[type="date"] {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding: 13px 9px;
+  font-size: 14px;
+}
+#transactionsScreen .two input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  text-align: center;
+}
+@media(max-width:350px) {
+  #transactionsScreen .two { grid-template-columns: minmax(0,1fr); }
+}
+
+/* Keep transaction expenses visibly red; the privacy treatment must not mute them. */
+#transactionsScreen .transaction .amount.negative {
+  color: #bd5148 !important;
+}
+#transactionsScreen .transaction .amount.positive {
+  color: #347454 !important;
+}
+
+/* Softer sage toast, consistent with PocketLedger's forest-green palette. */
+.app-toast {
+  background: #dcebe0;
+  border: 1px solid #c6dccd;
+  color: #244b37;
+  box-shadow: 0 10px 28px rgba(35,75,52,.14);
+}
+.app-toast[data-type="error"] {
+  background: #f5dfdb;
+  border-color: #ebc6bf;
+  color: #913d34;
+}
