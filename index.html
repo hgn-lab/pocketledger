@@ -19,7 +19,6 @@
       <small>PERSONAL FINANCE</small>
       <h1>PocketLedger<span>.</span></h1>
     </div>
-    <button id="export" class="secondary">Export CSV</button>
   </header>
 
   <!-- HOME SCREEN -->
@@ -406,38 +405,21 @@
   <!-- SETTINGS SCREEN -->
   <section id="settingsScreen" class="screen settings-screen">
     <div class="section-heading"><h2>Settings</h2><small>Private · Local-first</small></div>
-    <section class="settings-card backup-section">
-      <div>
-        <h3>Secure backup</h3>
-        <p class="backup-intro">Create an encrypted copy of your transactions and budgets. On iPhone, use the share sheet and choose Save to Files, then select iCloud Drive.</p>
-      </div>
-      <label class="backup-label" for="backupPassword">Backup password</label>
-      <input id="backupPassword" type="password" autocomplete="new-password" minlength="12" placeholder="At least 12 characters">
-      <p class="backup-hint">Use a strong password you can remember. PocketLedger cannot recover it if you lose it.</p>
-      <button id="createBackup" class="primary" type="button">Create encrypted backup</button>
-      <button id="chooseBackup" class="secondary backup-restore" type="button">Restore from backup file</button>
-      <input id="backupFile" type="file" accept=".json,application/json" hidden>
-      <p id="backupStatus" class="backup-status" role="status" aria-live="polite"></p>
-    </section>
-    <p class="settings-note">Your financial records stay on this device. No account or sign-in is required.</p>
-
     <section id="accountsScreen" class="accounts-screen">
-    <div class="section-heading"><h2>Accounts</h2><small>IDR · Local only</small></div>
-    <section class="account-summary">
-      <div><small>Total assets</small><strong id="totalAssets">Rp0</strong></div>
-      <div><small>Total liabilities</small><strong id="totalLiabilities">Rp0</strong></div>
-      <div class="net-worth"><small>Net worth</small><strong id="netWorth">Rp0</strong></div>
-    </section>
-    <section class="section credit-card-section">
-      <div class="section-heading"><h3>Credit cards</h3><small>Credit facilities</small></div>
-      <p class="account-note">Credit limits are purchasing capacity, not assets. Outstanding balances remain included in total liabilities and net worth.</p>
-      <div id="creditCardList" class="credit-card-list"></div>
-    </section>
-    <section class="section">
-      <h3>Other accounts & liabilities</h3>
-      <p class="account-note">Balances are calculated from opening balances and recorded ledger activity. Older transactions remain unassigned until you link them.</p>
-      <div id="accountList" class="account-list"></div>
-    </section>
+      <div class="section-heading"><h2>Financial accounts</h2><small>IDR · Local only</small></div>
+      <section class="account-summary">
+        <div><small>Total assets</small><strong id="totalAssets">Rp0</strong></div>
+        <div><small>Total liabilities</small><strong id="totalLiabilities">Rp0</strong></div>
+        <div class="net-worth"><small>Net worth</small><strong id="netWorth">Rp0</strong></div>
+      </section>
+      <nav class="period-tabs settings-tabs" aria-label="Account settings sections">
+        <button class="period-btn active" type="button" data-settings-tab="accounts">Accounts</button>
+        <button class="period-btn" type="button" data-settings-tab="cards">Credit cards</button>
+        <button class="period-btn" type="button" data-settings-tab="liabilities">Liabilities</button>
+      </nav>
+      <section class="settings-panel active" data-settings-panel="accounts">
+        <p class="account-note">Your bank, cash, savings and investment accounts.</p>
+        <div id="accountList" class="account-list"></div>
     <section class="section account-form-card">
       <h3>Add account</h3>
       <form id="accountForm">
@@ -472,7 +454,36 @@
         <button class="primary" type="submit">Save transfer</button><p id="transferStatus" role="status"></p>
       </form>
     </section>
-  </section>
+
+      </section>
+      <section class="settings-panel" data-settings-panel="cards" hidden>
+        <p class="account-note">Credit limits are purchasing capacity, not assets. Outstanding balances remain included in total liabilities and net worth.</p>
+        <div id="creditCardList" class="credit-card-list"></div>
+      </section>
+      <section class="settings-panel" data-settings-panel="liabilities" hidden>
+        <p class="account-note">Loan, mortgage and other liability balances are included in total liabilities and net worth.</p>
+        <div id="liabilityList" class="account-list"></div>
+      </section>
+    </section>
+    <section class="settings-card export-section">
+      <div><h3>Export data</h3><p class="backup-intro">Download your transactions as a CSV file for spreadsheets and reporting.</p></div>
+      <button id="export" class="secondary" type="button">Export CSV</button>
+    </section>
+    <section class="settings-card backup-section">
+      <div>
+        <h3>Secure backup</h3>
+        <p class="backup-intro">Create an encrypted copy of your transactions and budgets. On iPhone, use the share sheet and choose Save to Files, then select iCloud Drive.</p>
+      </div>
+      <label class="backup-label" for="backupPassword">Backup password</label>
+      <input id="backupPassword" type="password" autocomplete="new-password" minlength="12" placeholder="At least 12 characters">
+      <p class="backup-hint">Use a strong password you can remember. PocketLedger cannot recover it if you lose it.</p>
+      <button id="createBackup" class="primary" type="button">Create encrypted backup</button>
+      <button id="chooseBackup" class="secondary backup-restore" type="button">Restore from backup file</button>
+      <input id="backupFile" type="file" accept=".json,application/json" hidden>
+      <p id="backupStatus" class="backup-status" role="status" aria-live="polite"></p>
+    </section>
+
+    <p class="settings-note">Your financial records stay on this device. No account or sign-in is required.</p>
   </section>
 
   <footer>Stored locally on this device. Export regularly.</footer>
