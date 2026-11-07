@@ -308,21 +308,13 @@ $("privacyToggle").addEventListener("click", togglePrivacyMode);
 
 async function render() {
   const selectedDate = $("month").value || localDate();
-  const [startDate, endDate] =
-    getPeriodRange(selectedDate, dashboardPeriod);
-
+  const [startDate, endDate] = getPeriodRange(selectedDate, dashboardPeriod);
   const rows = (await all())
     .filter(x => x.date >= startDate && x.date <= endDate)
-    .sort((a, b) =>
-      b.date.localeCompare(a.date) || b.id - a.id
-    );
-
-  const income = rows
-    .filter(x => x.type === "income")
+    .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+  const income = rows.filter(x => x.type === "income")
     .reduce((sum, x) => sum + x.amount, 0);
-
-  const expenses = rows
-    .filter(x => x.type === "expense")
+  const expenses = rows.filter(x => x.type === "expense")
     .reduce((sum, x) => sum + x.amount, 0);
 
   setSensitiveText($("income"), money(income));
@@ -330,72 +322,35 @@ async function render() {
   setSensitiveText($("balance"), money(income - expenses));
   $("balance").classList.toggle("negative-value", income - expenses < 0);
   $("count").textContent = `${rows.length} items`;
-
-  $("balanceLabel").textContent =
-    `${dashboardPeriod.toUpperCase()} BALANCE`;
-
+  $("balanceLabel").textContent = `${dashboardPeriod.toUpperCase()} BALANCE`;
   $("dashboardSubtitle").textContent =
-    `${dashboardPeriod.charAt(0).toUpperCase() +
-    dashboardPeriod.slice(1)} overview · ${
-      periodDescription(selectedDate, dashboardPeriod)
-    }`;
+    `${dashboardPeriod.charAt(0).toUpperCase() + dashboardPeriod.slice(1)} overview · ${periodDescription(selectedDate, dashboardPeriod)}`;
 
-  document.querySelectorAll("[data-quick-action]").forEach(button => {
-  button.addEventListener("click", () => {
-    const type = button.dataset.quickAction;
-    const radio = document.querySelector(`input[name="type"][value="${type}"]`);
-    if (radio) radio.checked = true;
-    showScreen("transactionsScreen");
-    $("description").focus({ preventScroll: true });
-  });
-});
-document.querySelectorAll("[data-go-screen]").forEach(button => {
-  button.addEventListener("click", () => showScreen(button.dataset.goScreen));
-});
-
-document.querySelectorAll(".period-btn").forEach(button => {
-    button.classList.toggle(
-      "active",
-      button.dataset.period === dashboardPeriod
-    );
+  document.querySelectorAll(".period-btn").forEach(button => {
+    button.classList.toggle("active", button.dataset.period === dashboardPeriod);
   });
 
   const activeDays = new Set(rows.map(x => x.date)).size;
-
   const insights = [
     ["Transactions", String(rows.length)],
     ["Active days", String(activeDays)],
-    [
-      "Average daily spending",
-      money(activeDays ? expenses / activeDays : 0)
-    ],
-    [
-      "Savings rate",
-      income > 0
-        ? `${((income - expenses) / income * 100).toFixed(1)}%`
-        : "—"
-    ]
+    ["Average daily spending", money(activeDays ? expenses / activeDays : 0)],
+    ["Savings rate", income > 0 ? `${((income - expenses) / income * 100).toFixed(1)}%` : "—"]
   ];
-
   const container = $("periodInsights");
   container.replaceChildren();
-
   for (const [label, value] of insights) {
     const card = document.createElement("div");
     card.className = "insight-card";
-
     const title = document.createElement("span");
     title.textContent = label;
-
     const amount = document.createElement("strong");
-    if (label === "Average daily spending") {
-      setSensitiveText(amount, value);
-    } else {
-      amount.textContent = value;
-    }
-
+    if (label === "Average daily spending") setSensitiveText(amount, value);
+    else amount.textContent = value;
     card.append(title, amount);
     container.append(card);
+  }
+
   await renderDashboardSnapshot();
   await renderRecentActivity();
 }
@@ -1241,6 +1196,20 @@ async function refreshAll() {
     await renderAnalytics();
   }
 }
+
+// HOME DASHBOARD QUICK ACTIONS
+document.querySelectorAll("[data-quick-action]").forEach(button => {
+  button.addEventListener("click", () => {
+    const type = button.dataset.quickAction;
+    const radio = document.querySelector(`input[name="type"][value="${type}"]`);
+    if (radio) radio.checked = true;
+    showScreen("transactionsScreen");
+    $("description").focus({ preventScroll: true });
+  });
+});
+document.querySelectorAll("[data-go-screen]").forEach(button => {
+  button.addEventListener("click", () => showScreen(button.dataset.goScreen));
+});
 
 // DASHBOARD CONTROLS
 
