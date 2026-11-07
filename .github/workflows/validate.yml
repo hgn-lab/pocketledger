@@ -21,31 +21,21 @@ jobs:
           node-version: 22
 
       - name: Check JavaScript syntax
-        run: |
-          cp auth.js /tmp/auth.mjs
-          node --check /tmp/auth.mjs
-          node --check app.js
+        run: node --check app.js
 
-      - name: Check authentication wiring
+      - name: Check direct local-first launch
         run: |
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
           const html = fs.readFileSync('index.html', 'utf8');
-          const auth = fs.readFileSync('auth.js', 'utf8');
           const sw = fs.readFileSync('service-worker.js', 'utf8');
           const checks = [
-            ['auth gate class on body', html.includes('<body class="auth-pending">')],
-            ['auth module loaded by page', html.includes('<script type="module" src="auth.js"></script>')],
-            ['legacy direct app script removed', !html.includes('<script src="app.js"></script>')],
-            ['Supabase email sign-in implemented', auth.includes('signInWithPassword')],
-            ['Supabase registration implemented', auth.includes('auth.signUp')],
-            ['password reset implemented', auth.includes('resetPasswordForEmail')],
-            ['password recovery implemented', auth.includes('PASSWORD_RECOVERY') && auth.includes('updateUser({ password })')],
-            ['sign-out implemented', auth.includes('auth.signOut()')],
-            ['auth module included in service-worker cache', sw.includes('"./auth.js"')]
+            ['page does not require an authentication state', !html.includes('auth-pending')],
+            ['app.js loads directly', html.includes('<script src="app.js"></script>')],
+            ['Supabase auth gate is not loaded', !html.includes('auth.js')],
+            ['service worker does not cache auth gate', !sw.includes('auth.js')],
+            ['service worker cache version refreshed', sw.includes('pocketledger-v9')]
           ];
-          for (const [label, ok] of checks) {
-            console.log(`${ok ? 'PASS' : 'FAIL'}: ${label}`);
-          }
+          for (const [label, ok] of checks) console.log(`${ok ? 'PASS' : 'FAIL'}: ${label}`);
           if (checks.some(([, ok]) => !ok)) process.exit(1);
           NODE
