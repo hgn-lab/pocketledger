@@ -282,16 +282,11 @@ function showScreen(screenId) {
 
   if (screenId === "homeScreen") {
     render().catch(console.error);
+    renderAnalytics().catch(console.error);
   }
 
   if (screenId === "transactionsScreen") {
     renderTransactions().catch(console.error);
-  }
-  if (screenId === "analyticsScreen") {
-    renderAnalytics().catch(console.error);
-  }
-  if (screenId === "accountsScreen") {
-    renderAccounts().catch(console.error);
   }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -308,80 +303,98 @@ $("privacyToggle").addEventListener("click", togglePrivacyMode);
 
 async function render() {
   const selectedDate = $("month").value || localDate();
-  const [startDate, endDate] =
-    getPeriodRange(selectedDate, dashboardPeriod);
-
+  const [startDate, endDate] = getPeriodRange(selectedDate, dashboardPeriod);
   const rows = (await all())
     .filter(x => x.date >= startDate && x.date <= endDate)
-    .sort((a, b) =>
-      b.date.localeCompare(a.date) || b.id - a.id
-    );
-
-  const income = rows
-    .filter(x => x.type === "income")
+    .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+  const income = rows.filter(x => x.type === "income")
     .reduce((sum, x) => sum + x.amount, 0);
-
-  const expenses = rows
-    .filter(x => x.type === "expense")
+  const expenses = rows.filter(x => x.type === "expense")
     .reduce((sum, x) => sum + x.amount, 0);
 
   setSensitiveText($("income"), money(income));
   setSensitiveText($("expenses"), money(expenses));
   setSensitiveText($("balance"), money(income - expenses));
+  $("balance").classList.toggle("negative-value", income - expenses < 0);
   $("count").textContent = `${rows.length} items`;
-
-  $("balanceLabel").textContent =
-    `${dashboardPeriod.toUpperCase()} BALANCE`;
-
+  $("balanceLabel").textContent = `${dashboardPeriod.toUpperCase()} BALANCE`;
   $("dashboardSubtitle").textContent =
-    `${dashboardPeriod.charAt(0).toUpperCase() +
-    dashboardPeriod.slice(1)} overview · ${
-      periodDescription(selectedDate, dashboardPeriod)
-    }`;
+    `${dashboardPeriod.charAt(0).toUpperCase() + dashboardPeriod.slice(1)} overview · ${periodDescription(selectedDate, dashboardPeriod)}`;
 
   document.querySelectorAll(".period-btn").forEach(button => {
-    button.classList.toggle(
-      "active",
-      button.dataset.period === dashboardPeriod
-    );
+    button.classList.toggle("active", button.dataset.period === dashboardPeriod);
   });
 
   const activeDays = new Set(rows.map(x => x.date)).size;
-
   const insights = [
     ["Transactions", String(rows.length)],
     ["Active days", String(activeDays)],
-    [
-      "Average daily spending",
-      money(activeDays ? expenses / activeDays : 0)
-    ],
-    [
-      "Savings rate",
-      income > 0
-        ? `${((income - expenses) / income * 100).toFixed(1)}%`
-        : "—"
-    ]
+    ["Average daily spending", money(activeDays ? expenses / activeDays : 0)],
+    ["Savings rate", income > 0 ? `${((income - expenses) / income * 100).toFixed(1)}%` : "—"]
   ];
-
   const container = $("periodInsights");
   container.replaceChildren();
-
   for (const [label, value] of insights) {
     const card = document.createElement("div");
     card.className = "insight-card";
-
     const title = document.createElement("span");
     title.textContent = label;
-
     const amount = document.createElement("strong");
-    if (label === "Average daily spending") {
-      setSensitiveText(amount, value);
-    } else {
-      amount.textContent = value;
-    }
-
+    if (label === "Average daily spending") setSensitiveText(amount, value);
+    else amount.textContent = value;
     card.append(title, amount);
     container.append(card);
+  }
+
+  await renderDashboardSnapshot();
+  await renderRecentActivity();
+}
+
+async function renderDashboardSnapshot() {
+  const accounts = (await accountBalances()).filter(account => account.active !== false);
+  const assets = accounts.filter(account => account.classification === "asset")
+    .reduce((sum, account) => sum + Number(account.balance || 0), 0);
+  const liabilities = accounts.filter(account => account.classification === "liability")
+    .reduce((sum, account) => sum + Number(account.balance || 0), 0);
+  const netWorth = assets - liabilities;
+  setSensitiveText($("dashboardNetWorth"), money(netWorth));
+  setSensitiveText($("dashboardAssets"), money(assets));
+  setSensitiveText($("dashboardLiabilities"), money(liabilities));
+  $("dashboardNetWorth").classList.toggle("negative-value", netWorth < 0);
+}
+
+async function renderRecentActivity() {
+  const rows = (await all()).sort((a, b) =>
+    b.date.localeCompare(a.date) || b.id - a.id
+  ).slice(0, 4);
+  const container = $("dashboardRecentList");
+  container.replaceChildren();
+  if (!rows.length) {
+    const empty = document.createElement("p");
+    empty.className = "empty";
+    empty.textContent = "No transactions yet. Add your first expense or income to get started.";
+    container.append(empty);
+    return;
+  }
+  for (const item of rows) {
+    const row = document.createElement("div");
+    row.className = "dashboard-recent-row";
+    const icon = document.createElement("span");
+    icon.className = "dashboard-category-icon";
+    icon.innerHTML = categoryIcon(item.category);
+    const info = document.createElement("div");
+    info.className = "dashboard-recent-info";
+    const title = document.createElement("strong");
+    title.textContent = item.description;
+    const meta = document.createElement("small");
+    const parsed = new Date(item.date + "T00:00:00");
+    meta.textContent = `${item.category || "Other"} · ${parsed.toLocaleDateString("en-ID", {day:"numeric",month:"short"})}`;
+    info.append(title, meta);
+    const amount = document.createElement("strong");
+    amount.className = item.type === "income" ? "recent-income" : "recent-expense";
+    setSensitiveText(amount, `${item.type === "income" ? "+" : "−"}${money(item.amount)}`);
+    row.append(icon, info, amount);
+    container.append(row);
   }
 }
 
@@ -894,7 +907,7 @@ async function renderAccounts() {
   const accounts = await accountBalances();
   const active = accounts.filter(a => a.active !== false);
   const cards = active.filter(a => a.type === "Credit card");
-  const others = accounts.filter(a => a.type !== "Credit card");
+  const others = active.filter(a => a.type !== "Credit card");
   const assets = active.filter(a => a.classification === "asset");
   const liabilities = active.filter(a => a.classification === "liability");
   const totalAssets = assets.reduce((s,a) => s + a.balance, 0);
@@ -902,33 +915,53 @@ async function renderAccounts() {
   setSensitiveText($("totalAssets"), money(totalAssets));
   setSensitiveText($("totalLiabilities"), money(totalLiabilities));
   setSensitiveText($("netWorth"), money(totalAssets-totalLiabilities));
+  $("netWorth").classList.toggle("negative-value", totalAssets - totalLiabilities < 0);
 
   const cardList=$("creditCardList"); cardList.replaceChildren();
   if (!cards.length) { const empty=document.createElement("p"); empty.className="empty"; empty.textContent="No credit cards yet. Add one below to track limit, outstanding balance and available credit."; cardList.append(empty); }
   cards.forEach(account => {
-    const limit=Number(account.creditLimit||0), outstanding=Math.max(0,Number(account.balance||0));
-    const available=Math.max(0,limit-outstanding), usage=limit>0?Math.min(100,outstanding/limit*100):0;
-    const card=document.createElement("article"); card.className="credit-card";
-    const top=document.createElement("div"); top.className="credit-card-top";
-    const name=document.createElement("strong"); name.textContent=account.name;
-    const tag=document.createElement("span"); tag.className="credit-tag"; tag.textContent="CREDIT CARD"; top.append(name,tag);
-    const label=document.createElement("small"); label.textContent="OUTSTANDING BALANCE";
-    const balance=document.createElement("strong"); balance.className="credit-outstanding"; setSensitiveText(balance,money(outstanding));
-    const metrics=document.createElement("div"); metrics.className="credit-metrics";
-    const l=document.createElement("div"), r=document.createElement("div");
-    const ll=document.createElement("small"); ll.textContent="Credit limit"; const lv=document.createElement("strong"); setSensitiveText(lv,limit?money(limit):"Not set");
-    const al=document.createElement("small"); al.textContent="Available credit"; const av=document.createElement("strong"); setSensitiveText(av,limit?money(available):"—");
-    l.append(ll,lv); r.append(al,av); metrics.append(l,r);
-    const track=document.createElement("div"); track.className="credit-usage-track";
-    const fill=document.createElement("div"); fill.className="credit-usage-fill"; fill.style.width=`${usage}%`; track.append(fill);
-    const usageLabel=document.createElement("small"); usageLabel.className="credit-usage-label"; usageLabel.textContent=limit?`${usage.toFixed(0)}% of limit used`:"Add a limit to calculate available credit";
-    card.classList.add("account-card-interactive");
-    card.setAttribute("role", "button");
-    card.setAttribute("tabindex", "0");
-    card.setAttribute("aria-label", `Open ${account.name} details`);
+    const limit = Number(account.creditLimit || 0);
+    const outstanding = Number(account.balance || 0);
+    const available = limit - outstanding;
+    const usage = limit > 0 ? Math.max(0, Math.min(100, outstanding / limit * 100)) : 0;
+
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "account-row account-card-interactive credit-account-row";
     card.addEventListener("click", () => openAccountEditor(account));
-    card.addEventListener("keydown", event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openAccountEditor(account); } });
-    card.append(top,label,balance,metrics,track,usageLabel); cardList.append(card);
+    card.setAttribute("aria-label", `Open ${account.name} credit card details`);
+
+    const info = document.createElement("div");
+    info.className = "account-row-info";
+    const name = document.createElement("strong");
+    name.textContent = account.name;
+    const meta = document.createElement("small");
+    meta.textContent = limit > 0
+      ? `Credit card · Limit ${money(limit)}`
+      : "Credit card · Limit not set";
+    info.append(name, meta);
+
+    const valueWrap = document.createElement("div");
+    valueWrap.className = "account-row-values";
+    const balance = document.createElement("strong");
+    balance.className = "account-value";
+    setSensitiveText(balance, money(outstanding));
+    balance.classList.toggle("negative-value", outstanding < 0);
+    const availableLabel = document.createElement("small");
+    availableLabel.textContent = limit > 0
+      ? `${money(available)} available`
+      : "Available credit —";
+    valueWrap.append(balance, availableLabel);
+
+    const progress = document.createElement("div");
+    progress.className = "account-usage-track";
+    const fill = document.createElement("div");
+    fill.className = "account-usage-fill";
+    fill.style.width = `${usage}%`;
+    progress.append(fill);
+
+    card.append(info, valueWrap, progress);
+    cardList.append(card);
   });
   const list=$("accountList"); list.replaceChildren();
   if (!others.length) { const empty=document.createElement("p"); empty.className="empty"; empty.textContent="No other accounts yet. Add bank, cash, savings, investment or liability accounts below."; list.append(empty); }
@@ -936,8 +969,10 @@ async function renderAccounts() {
     const row=document.createElement("button"); row.type="button"; row.className="account-row account-card-interactive";
     row.addEventListener("click", () => openAccountEditor(account));
     const info=document.createElement("div"); const name=document.createElement("strong"); name.textContent=account.name;
-    const meta=document.createElement("small"); meta.textContent=`${account.type} · ${account.active===false?"Archived":account.classification==="liability"?"Liability":"Asset"}`; info.append(name,meta);
-    const value=document.createElement("strong"); value.className="account-value"; setSensitiveText(value,money(account.balance)); row.append(info,value);
+    const meta=document.createElement("small"); meta.textContent=`${account.type} · ${account.classification==="liability"?"Liability":"Asset"}`; info.append(name,meta);
+    const value=document.createElement("strong"); value.className="account-value"; setSensitiveText(value,money(account.balance));
+    value.classList.toggle("negative-value", account.balance < 0);
+    row.append(info,value);
     list.append(row);
   });
   await renderAccountSelectors();
@@ -1152,10 +1187,24 @@ async function refreshAll() {
     await renderBudgets();
   }
 
-  if ($("analyticsScreen").classList.contains("active")) {
+  if ($("homeScreen").classList.contains("active")) {
     await renderAnalytics();
   }
 }
+
+// HOME DASHBOARD QUICK ACTIONS
+document.querySelectorAll("[data-quick-action]").forEach(button => {
+  button.addEventListener("click", () => {
+    const type = button.dataset.quickAction;
+    const radio = document.querySelector(`input[name="type"][value="${type}"]`);
+    if (radio) radio.checked = true;
+    showScreen("transactionsScreen");
+    $("description").focus({ preventScroll: true });
+  });
+});
+document.querySelectorAll("[data-go-screen]").forEach(button => {
+  button.addEventListener("click", () => showScreen(button.dataset.goScreen));
+});
 
 // DASHBOARD CONTROLS
 

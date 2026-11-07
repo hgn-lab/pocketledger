@@ -96,7 +96,7 @@ h1 span {
   transform: translateX(-50%);
   width: min(100%, 560px);
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 5px;
   padding: 10px 18px max(12px, env(safe-area-inset-bottom));
   background: rgba(250, 250, 247, .96);
@@ -631,7 +631,7 @@ footer {
 
 @media(max-width:380px) {
   .bottom-nav {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     padding-left: 8px;
     padding-right: 8px;
   }
@@ -897,3 +897,225 @@ footer {
 .category-icon svg, .transaction-category-icon svg { width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.65; stroke-linecap:round; stroke-linejoin:round; }
 .transaction-info { flex:1; min-width:0; }
 .transaction-category-icon { width:34px; height:34px; flex-basis:34px; }
+
+
+/* SETTINGS */
+.settings-screen { padding-bottom: 24px; }
+.settings-card {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+.settings-card h3 { margin: 0 0 8px; }
+.settings-card .backup-intro,
+.settings-note { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.settings-card .backup-hint { color: var(--muted); font-size: 11px; line-height: 1.5; margin: 0; }
+.settings-card input:not([type=file]) {
+  width: 100%; min-width: 0; max-width: 100%;
+  border: 1px solid var(--line); border-radius: 11px;
+  padding: 13px; background: #fff; color: #20221f;
+}
+.settings-card .backup-restore { width: 100%; text-align: center; }
+.settings-note { margin-top: 16px; }
+
+/* Compact, safe sizing for date controls on narrow iPhone viewports. */
+input[type="date"], input[type="month"] {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+.month input[type="date"],
+.month input[type="month"] { flex: 0 1 180px; }
+.two > label { min-width: 0; }
+.two input[type="date"] { min-width: 0; width: 100%; }
+
+/* Negative balances and net worth are visually explicit. */
+.negative-value { color: #bd5148 !important; }
+.balance .negative-value { color: #ffb0a6 !important; }
+
+
+/* Accounts: compact, consistent rows for every account type. */
+.accounts-screen {
+  padding: 18px 13px 24px;
+  margin: 6px -4px 20px;
+  border-radius: 22px;
+}
+.accounts-screen .section { margin-top: 18px; }
+.accounts-screen .section-heading { padding-bottom: 10px; }
+.accounts-screen .account-summary { padding: 18px; gap: 13px; }
+.accounts-screen .account-list,
+.accounts-screen .credit-card-list { display: grid; gap: 8px; }
+.accounts-screen .account-row {
+  min-height: 72px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 5px 10px;
+  width: 100%;
+  margin: 0;
+  padding: 12px 13px;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(34,65,49,.035);
+}
+.accounts-screen .account-row-info { display: grid; gap: 4px; min-width: 0; }
+.accounts-screen .account-row-info strong {
+  font-size: 13px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.accounts-screen .account-row-info small,
+.accounts-screen .account-row-values small {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.35;
+  color: #738076;
+}
+.accounts-screen .account-row-values {
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+  min-width: 0;
+  text-align: right;
+}
+.accounts-screen .account-row .account-value {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.accounts-screen .credit-account-row { background: #fff; color: var(--ink); }
+.accounts-screen .account-usage-track {
+  grid-column: 1 / -1;
+  height: 4px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #edf0eb;
+}
+.accounts-screen .account-usage-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--green);
+}
+.accounts-screen .account-row:active { background: #f5f8f4; }
+.accounts-screen .account-form-card { padding: 15px; }
+.accounts-screen .account-form-card form { gap: 10px; }
+.accounts-screen .account-form-card input,
+.accounts-screen .account-form-card select { padding: 11px; }
+.accounts-screen .account-note { margin: 0 0 10px; }
+@media(max-width:380px) {
+  .accounts-screen { padding-left: 11px; padding-right: 11px; }
+  .accounts-screen .account-row { padding: 11px; gap: 5px 7px; }
+  .accounts-screen .account-row .account-value { font-size: 12px; }
+}
+
+
+/* HOME DASHBOARD — editorial, calm and action-oriented. */
+#homeScreen .month { margin-top: 22px; }
+#homeScreen .dashboard-subtitle { margin: 8px 0 12px; }
+#homeScreen .balance {
+  padding: 22px;
+  border-radius: 23px;
+  background: linear-gradient(145deg, #173f30, #285b43);
+  box-shadow: 0 12px 28px rgba(23,63,48,.13);
+}
+#homeScreen .balance h2 { margin: 14px 0 23px; }
+.dashboard-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 15px 0 26px;
+}
+.dashboard-action {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 34px minmax(0,1fr) 12px;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  padding: 12px 10px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  color: var(--ink, #20221f);
+}
+.action-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 11px;
+  font-size: 21px;
+  font-weight: 500;
+}
+.expense-icon { background: #f7ece9; color: #a85c4d; }
+.income-icon { background: #eaf2ec; color: #315c49; }
+.dashboard-action > span:nth-child(2) { display: grid; gap: 3px; min-width: 0; }
+.dashboard-action strong { font-size: 11px; white-space: nowrap; }
+.dashboard-action small { color: var(--muted); font-size: 9px; }
+.action-arrow { color: #8a948b; font-size: 13px; }
+.dashboard-actions + .section { margin-top: 0; }
+.dashboard-accounts .section-heading,
+.dashboard-recent .section-heading { align-items: center; }
+.text-action {
+  border: 0; background: transparent; color: var(--green);
+  font-size: 11px; font-weight: 650; padding: 8px 0;
+  white-space: nowrap;
+}
+.dashboard-net-worth {
+  display: flex; justify-content: space-between; align-items: end;
+  gap: 10px; padding: 17px;
+  background: linear-gradient(145deg, #173f30, #285b43);
+  color: white; border-radius: 17px 17px 0 0;
+}
+.dashboard-net-worth > div { display: grid; gap: 7px; min-width: 0; }
+.dashboard-net-worth small { color: #d4e2d8; font-size: 9px; letter-spacing: .1em; }
+.dashboard-net-worth strong { font-size: clamp(20px, 6vw, 27px); letter-spacing: -.04em; overflow-wrap: anywhere; }
+.snapshot-caption { color: #d4e2d8; font-size: 9px; text-align: right; }
+.snapshot-metrics {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+  background: #dce6dc; border: 1px solid #dce6dc;
+  border-top: 0; border-radius: 0 0 17px 17px; overflow: hidden;
+}
+.snapshot-metrics > div { display: grid; gap: 6px; padding: 13px; background: #fff; min-width: 0; }
+.snapshot-metrics small { color: var(--muted); font-size: 10px; }
+.snapshot-metrics strong { font-size: 13px; overflow-wrap: anywhere; }
+.dashboard-recent-list {
+  background: #fff; border: 1px solid var(--line);
+  border-radius: 17px; padding: 0 14px;
+}
+.dashboard-recent-row {
+  display: grid; grid-template-columns: 34px minmax(0,1fr) auto;
+  align-items: center; gap: 10px; padding: 12px 0;
+  border-bottom: 1px solid #eff0ec;
+}
+.dashboard-recent-row:last-child { border-bottom: 0; }
+.dashboard-category-icon {
+  display: grid; place-items: center; width: 32px; height: 32px;
+  border-radius: 11px; background: #edf3ec; color: #587462;
+}
+.dashboard-category-icon svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.dashboard-recent-info { display: grid; gap: 4px; min-width: 0; }
+.dashboard-recent-info strong { font-size: 11px; overflow-wrap: anywhere; }
+.dashboard-recent-info small { color: var(--muted); font-size: 9px; }
+.dashboard-recent-row > strong { font-size: 11px; white-space: nowrap; }
+.recent-income { color: #347454; }
+.recent-expense { color: #343a35; }
+.dashboard-recent-list .empty { padding: 14px 0; }
+#homeScreen .section h3 { margin-top: 24px; }
+@media(max-width:360px) {
+  .dashboard-action { grid-template-columns: 29px minmax(0,1fr); gap: 6px; padding: 10px 8px; }
+  .action-arrow { display: none; }
+  .dashboard-action strong { font-size: 10px; }
+  .snapshot-caption { max-width: 86px; }
+}
+
+
+/* Four-tab navigation: analytics lives on Home and account management lives in Settings. */
+.bottom-nav { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media(max-width:380px) { .bottom-nav { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.analytics-embedded { margin-top: 28px; }
+.settings-screen .accounts-screen { margin-top: 28px; }

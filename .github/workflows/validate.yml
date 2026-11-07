@@ -1,0 +1,40 @@
+name: Validate PocketLedger
+
+on:
+  push:
+    branches:
+      - feature/supabase-auth-gate
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  static-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check JavaScript syntax
+        run: node --check app.js
+      - name: Check direct launch and consolidated navigation
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const html = fs.readFileSync('index.html', 'utf8');
+          const sw = fs.readFileSync('service-worker.js', 'utf8');
+          const checks = [
+            ['app launches directly', html.includes('<body>') && html.includes('<script src="app.js"></script>')],
+            ['authentication module removed from page', !html.includes('auth.js')],
+            ['four bottom navigation tabs', (html.match(/class="nav-btn/g) || []).length === 4],
+            ['analytics embedded in Home', html.indexOf('id="analyticsScreen"') < html.indexOf('<!-- BUDGET SCREEN -->')],
+            ['accounts embedded in Settings', html.indexOf('id="accountsScreen"') > html.indexOf('id="settingsScreen"')],
+            ['service worker does not cache auth module', !sw.includes('"./auth.js"')],
+            ['service worker cache version refreshed', sw.includes('pocketledger-v12')]
+          ];
+          for (const [label, ok] of checks) console.log((ok ? 'PASS: ' : 'FAIL: ') + label);
+          if (checks.some(([, ok]) => !ok)) process.exit(1);
+          NODE
