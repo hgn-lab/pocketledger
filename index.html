@@ -65,6 +65,44 @@
       </div>
     </section>
 
+    <section class="dashboard-actions" aria-label="Quick actions">
+      <button class="dashboard-action" type="button" data-quick-action="expense">
+        <span class="action-icon expense-icon" aria-hidden="true">−</span>
+        <span><strong>Add expense</strong><small>Record spending</small></span>
+        <span class="action-arrow" aria-hidden="true">↗</span>
+      </button>
+      <button class="dashboard-action" type="button" data-quick-action="income">
+        <span class="action-icon income-icon" aria-hidden="true">＋</span>
+        <span><strong>Add income</strong><small>Record money in</small></span>
+        <span class="action-arrow" aria-hidden="true">↗</span>
+      </button>
+    </section>
+
+    <section class="section dashboard-accounts">
+      <div class="section-heading">
+        <h3>Account snapshot</h3>
+        <button class="text-action" type="button" data-go-screen="accountsScreen">View accounts <span aria-hidden="true">→</span></button>
+      </div>
+      <div class="dashboard-net-worth">
+        <div><small>NET WORTH</small><strong id="dashboardNetWorth">Rp0</strong></div>
+        <span class="snapshot-caption">Assets minus liabilities</span>
+      </div>
+      <div class="snapshot-metrics">
+        <div><small>Total assets</small><strong id="dashboardAssets">Rp0</strong></div>
+        <div><small>Total liabilities</small><strong id="dashboardLiabilities">Rp0</strong></div>
+      </div>
+    </section>
+
+    <section class="section dashboard-recent">
+      <div class="section-heading">
+        <h3>Recent activity</h3>
+        <button class="text-action" type="button" data-go-screen="transactionsScreen">See all <span aria-hidden="true">→</span></button>
+      </div>
+      <div id="dashboardRecentList" class="dashboard-recent-list">
+        <p class="empty">Your recent transactions will appear here.</p>
+      </div>
+    </section>
+
     <section class="section">
       <h3>Period insights</h3>
       <div id="periodInsights" class="insights-grid"></div>
