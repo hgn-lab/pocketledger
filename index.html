@@ -366,8 +366,9 @@
       <section class="settings-panel active" data-settings-panel="accounts">
         <p class="account-note">Your bank, cash, savings and investment accounts.</p>
         <div id="accountList" class="account-list"></div>
-    <section class="section account-form-card">
-      <h3>Add account</h3>
+    <section class="section account-form-card compact-add-card">
+      <details class="account-add-details">
+        <summary><span>Add account</span><small>＋</small></summary>
       <form id="accountForm">
         <label>Account name<input id="accountName" maxlength="60" placeholder="BCA Main Account" required></label>
         <div class="two">
@@ -387,6 +388,7 @@
         <label>Opening balance date<input id="openingDate" type="date" required></label>
         <button class="primary" type="submit">Add account</button><p id="accountStatus" role="status"></p>
       </form>
+      </details>
     </section>
     <section class="section account-form-card">
       <h3>Transfer between accounts</h3>
@@ -432,6 +434,17 @@
     <p class="settings-note">Your financial records stay on this device. No account or sign-in is required.</p>
   </section>
 
+  <dialog id="archiveConfirmDialog" class="archive-dialog">
+    <div class="archive-dialog-content">
+      <div class="archive-dialog-icon" aria-hidden="true">↗</div>
+      <h3>Archive this account?</h3>
+      <p><strong id="archiveConfirmName"></strong> will be removed from your active accounts. Its transactions and ledger history will will be preserved in your records.</p>
+      <div class="archive-dialog-actions">
+        <button id="cancelArchive" class="secondary" type="button">Keep account</button>
+        <button id="confirmArchive" class="danger-primary" type="button">Archive account</button>
+      </div>
+    </div>
+  </dialog>
   <div id="appToast" class="app-toast" role="status" aria-live="polite" aria-atomic="true" aria-hidden="true"></div>
   <footer>Stored locally on this device. Export regularly.</footer>
 </main>
