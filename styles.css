@@ -1165,3 +1165,17 @@ input[type="date"], input[type="month"] {
 @media (prefers-reduced-motion: reduce) {
   .app-toast { transition: none; }
 }
+
+
+/* Account archive action in the editor. */
+.edit-dialog-actions { display: grid; gap: 10px; }
+.delete-account-button {
+  width: 100%;
+  border: 1px solid #e6c9c5;
+  border-radius: 12px;
+  padding: 12px 16px;
+  background: #fff7f6;
+  color: #a33e35;
+  font-weight: 650;
+}
+.delete-account-button:active { background: #fbe9e6; }
