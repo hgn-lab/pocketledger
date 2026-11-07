@@ -897,3 +897,42 @@ footer {
 .category-icon svg, .transaction-category-icon svg { width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.65; stroke-linecap:round; stroke-linejoin:round; }
 .transaction-info { flex:1; min-width:0; }
 .transaction-category-icon { width:34px; height:34px; flex-basis:34px; }
+
+
+/* SETTINGS */
+.settings-screen { padding-bottom: 24px; }
+.settings-card {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+.settings-card h3 { margin: 0 0 8px; }
+.settings-card .backup-intro,
+.settings-note { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.settings-card .backup-hint { color: var(--muted); font-size: 11px; line-height: 1.5; margin: 0; }
+.settings-card input:not([type=file]) {
+  width: 100%; min-width: 0; max-width: 100%;
+  border: 1px solid var(--line); border-radius: 11px;
+  padding: 13px; background: #fff; color: #20221f;
+}
+.settings-card .backup-restore { width: 100%; text-align: center; }
+.settings-note { margin-top: 16px; }
+
+/* Compact, safe sizing for date controls on narrow iPhone viewports. */
+input[type="date"], input[type="month"] {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+.month input[type="date"],
+.month input[type="month"] { flex: 0 1 180px; }
+.two > label { min-width: 0; }
+.two input[type="date"] { min-width: 0; width: 100%; }
+
+/* Negative balances and net worth are visually explicit. */
+.negative-value { color: #bd5148 !important; }
+.balance .negative-value { color: #ffb0a6 !important; }
