@@ -895,7 +895,7 @@ async function renderAccounts() {
   const accounts = await accountBalances();
   const active = accounts.filter(a => a.active !== false);
   const cards = active.filter(a => a.type === "Credit card");
-  const others = accounts.filter(a => a.type !== "Credit card");
+  const others = active.filter(a => a.type !== "Credit card");
   const assets = active.filter(a => a.classification === "asset");
   const liabilities = active.filter(a => a.classification === "liability");
   const totalAssets = assets.reduce((s,a) => s + a.balance, 0);
@@ -908,29 +908,48 @@ async function renderAccounts() {
   const cardList=$("creditCardList"); cardList.replaceChildren();
   if (!cards.length) { const empty=document.createElement("p"); empty.className="empty"; empty.textContent="No credit cards yet. Add one below to track limit, outstanding balance and available credit."; cardList.append(empty); }
   cards.forEach(account => {
-    const limit=Number(account.creditLimit||0), outstanding=Math.max(0,Number(account.balance||0));
-    const available=Math.max(0,limit-outstanding), usage=limit>0?Math.min(100,outstanding/limit*100):0;
-    const card=document.createElement("article"); card.className="credit-card";
-    const top=document.createElement("div"); top.className="credit-card-top";
-    const name=document.createElement("strong"); name.textContent=account.name;
-    const tag=document.createElement("span"); tag.className="credit-tag"; tag.textContent="CREDIT CARD"; top.append(name,tag);
-    const label=document.createElement("small"); label.textContent="OUTSTANDING BALANCE";
-    const balance=document.createElement("strong"); balance.className="credit-outstanding"; setSensitiveText(balance,money(outstanding));
-    const metrics=document.createElement("div"); metrics.className="credit-metrics";
-    const l=document.createElement("div"), r=document.createElement("div");
-    const ll=document.createElement("small"); ll.textContent="Credit limit"; const lv=document.createElement("strong"); setSensitiveText(lv,limit?money(limit):"Not set");
-    const al=document.createElement("small"); al.textContent="Available credit"; const av=document.createElement("strong"); setSensitiveText(av,limit?money(available):"—");
-    l.append(ll,lv); r.append(al,av); metrics.append(l,r);
-    const track=document.createElement("div"); track.className="credit-usage-track";
-    const fill=document.createElement("div"); fill.className="credit-usage-fill"; fill.style.width=`${usage}%`; track.append(fill);
-    const usageLabel=document.createElement("small"); usageLabel.className="credit-usage-label"; usageLabel.textContent=limit?`${usage.toFixed(0)}% of limit used`:"Add a limit to calculate available credit";
-    card.classList.add("account-card-interactive");
-    card.setAttribute("role", "button");
-    card.setAttribute("tabindex", "0");
-    card.setAttribute("aria-label", `Open ${account.name} details`);
+    const limit = Number(account.creditLimit || 0);
+    const outstanding = Number(account.balance || 0);
+    const available = limit - outstanding;
+    const usage = limit > 0 ? Math.max(0, Math.min(100, outstanding / limit * 100)) : 0;
+
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "account-row account-card-interactive credit-account-row";
     card.addEventListener("click", () => openAccountEditor(account));
-    card.addEventListener("keydown", event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openAccountEditor(account); } });
-    card.append(top,label,balance,metrics,track,usageLabel); cardList.append(card);
+    card.setAttribute("aria-label", `Open ${account.name} credit card details`);
+
+    const info = document.createElement("div");
+    info.className = "account-row-info";
+    const name = document.createElement("strong");
+    name.textContent = account.name;
+    const meta = document.createElement("small");
+    meta.textContent = limit > 0
+      ? `Credit card · Limit ${money(limit)}`
+      : "Credit card · Limit not set";
+    info.append(name, meta);
+
+    const valueWrap = document.createElement("div");
+    valueWrap.className = "account-row-values";
+    const balance = document.createElement("strong");
+    balance.className = "account-value";
+    setSensitiveText(balance, money(outstanding));
+    balance.classList.toggle("negative-value", outstanding < 0);
+    const availableLabel = document.createElement("small");
+    availableLabel.textContent = limit > 0
+      ? `${money(available)} available`
+      : "Available credit —";
+    valueWrap.append(balance, availableLabel);
+
+    const progress = document.createElement("div");
+    progress.className = "account-usage-track";
+    const fill = document.createElement("div");
+    fill.className = "account-usage-fill";
+    fill.style.width = `${usage}%`;
+    progress.append(fill);
+
+    card.append(info, valueWrap, progress);
+    cardList.append(card);
   });
   const list=$("accountList"); list.replaceChildren();
   if (!others.length) { const empty=document.createElement("p"); empty.className="empty"; empty.textContent="No other accounts yet. Add bank, cash, savings, investment or liability accounts below."; list.append(empty); }
@@ -938,7 +957,7 @@ async function renderAccounts() {
     const row=document.createElement("button"); row.type="button"; row.className="account-row account-card-interactive";
     row.addEventListener("click", () => openAccountEditor(account));
     const info=document.createElement("div"); const name=document.createElement("strong"); name.textContent=account.name;
-    const meta=document.createElement("small"); meta.textContent=`${account.type} · ${account.active===false?"Archived":account.classification==="liability"?"Liability":"Asset"}`; info.append(name,meta);
+    const meta=document.createElement("small"); meta.textContent=`${account.type} · ${account.classification==="liability"?"Liability":"Asset"}`; info.append(name,meta);
     const value=document.createElement("strong"); value.className="account-value"; setSensitiveText(value,money(account.balance));
     value.classList.toggle("negative-value", account.balance < 0);
     row.append(info,value);
