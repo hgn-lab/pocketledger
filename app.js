@@ -288,6 +288,9 @@ function showScreen(screenId) {
   if (screenId === "transactionsScreen") {
     renderTransactions().catch(console.error);
   }
+  if (screenId === "settingsScreen") {
+    renderAccounts().catch(console.error);
+  }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -907,7 +910,8 @@ async function renderAccounts() {
   const accounts = await accountBalances();
   const active = accounts.filter(a => a.active !== false);
   const cards = active.filter(a => a.type === "Credit card");
-  const others = active.filter(a => a.type !== "Credit card");
+  const otherAssets = active.filter(a => a.type !== "Credit card" && a.classification === "asset");
+  const otherLiabilities = active.filter(a => a.type !== "Credit card" && a.classification === "liability");
   const assets = active.filter(a => a.classification === "asset");
   const liabilities = active.filter(a => a.classification === "liability");
   const totalAssets = assets.reduce((s,a) => s + a.balance, 0);
@@ -964,8 +968,8 @@ async function renderAccounts() {
     cardList.append(card);
   });
   const list=$("accountList"); list.replaceChildren();
-  if (!others.length) { const empty=document.createElement("p"); empty.className="empty"; empty.textContent="No other accounts yet. Add bank, cash, savings, investment or liability accounts below."; list.append(empty); }
-  others.forEach(account=>{
+  if (!otherAssets.length) { const empty=document.createElement("p"); empty.className="empty"; empty.textContent="No accounts yet. Add a bank, cash, savings or investment account below."; list.append(empty); }
+  otherAssets.forEach(account=>{
     const row=document.createElement("button"); row.type="button"; row.className="account-row account-card-interactive";
     row.addEventListener("click", () => openAccountEditor(account));
     const info=document.createElement("div"); const name=document.createElement("strong"); name.textContent=account.name;
@@ -974,6 +978,17 @@ async function renderAccounts() {
     value.classList.toggle("negative-value", account.balance < 0);
     row.append(info,value);
     list.append(row);
+  });
+  const liabilityList = $("liabilityList");
+  liabilityList.replaceChildren();
+  if (!otherLiabilities.length) { const empty=document.createElement("p"); empty.className="empty"; empty.textContent="No loans or other liabilities yet."; liabilityList.append(empty); }
+  otherLiabilities.forEach(account => {
+    const row=document.createElement("button"); row.type="button"; row.className="account-row account-card-interactive";
+    row.addEventListener("click", () => openAccountEditor(account));
+    const info=document.createElement("div"); const name=document.createElement("strong"); name.textContent=account.name;
+    const meta=document.createElement("small"); meta.textContent=account.type; info.append(name,meta);
+    const value=document.createElement("strong"); value.className="account-value"; setSensitiveText(value,money(account.balance));
+    row.append(info,value); liabilityList.append(row);
   });
   await renderAccountSelectors();
 }
@@ -1175,6 +1190,21 @@ $("form").onsubmit = async event => {
     console.error(error);
   }
 };
+
+// SETTINGS SEGMENTED NAVIGATION
+document.querySelectorAll("[data-settings-tab]").forEach(button => {
+  button.addEventListener("click", () => {
+    const tab = button.dataset.settingsTab;
+    document.querySelectorAll("[data-settings-tab]").forEach(item =>
+      item.classList.toggle("active", item === button)
+    );
+    document.querySelectorAll("[data-settings-panel]").forEach(panel => {
+      const active = panel.dataset.settingsPanel === tab;
+      panel.hidden = !active;
+      panel.classList.toggle("active", active);
+    });
+  });
+});
 
 // REFRESH ALL SCREENS
 
