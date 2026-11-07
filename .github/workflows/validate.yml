@@ -1,0 +1,51 @@
+name: Validate PocketLedger
+
+on:
+  push:
+    branches:
+      - feature/supabase-auth-gate
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  static-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check JavaScript syntax
+        run: |
+          cp auth.js /tmp/auth.mjs
+          node --check /tmp/auth.mjs
+          node --check app.js
+
+      - name: Check authentication wiring
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const html = fs.readFileSync('index.html', 'utf8');
+          const auth = fs.readFileSync('auth.js', 'utf8');
+          const sw = fs.readFileSync('service-worker.js', 'utf8');
+          const checks = [
+            ['auth gate class on body', html.includes('<body class="auth-pending">')],
+            ['auth module loaded by page', html.includes('<script type="module" src="auth.js"></script>')],
+            ['legacy direct app script removed', !html.includes('<script src="app.js"></script>')],
+            ['Supabase email sign-in implemented', auth.includes('signInWithPassword')],
+            ['Supabase registration implemented', auth.includes('auth.signUp')],
+            ['password reset implemented', auth.includes('resetPasswordForEmail')],
+            ['password recovery implemented', auth.includes('PASSWORD_RECOVERY') && auth.includes('updateUser({ password })')],
+            ['sign-out implemented', auth.includes('auth.signOut()')],
+            ['auth module included in service-worker cache', sw.includes('"./auth.js"')]
+          ];
+          for (const [label, ok] of checks) {
+            console.log(`${ok ? 'PASS' : 'FAIL'}: ${label}`);
+          }
+          if (checks.some(([, ok]) => !ok)) process.exit(1);
+          NODE
