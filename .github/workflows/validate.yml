@@ -40,7 +40,10 @@ jobs:
             ['password recovery implemented', auth.includes('PASSWORD_RECOVERY') && auth.includes('updateUser({ password })')],
             ['sign-out implemented', auth.includes('auth.signOut()')],
             ['auth module included in service-worker cache', sw.includes('"./auth.js"')],
-            ['service worker cache version refreshed', sw.includes('pocketledger-v10')]
+            ['service worker cache version refreshed', sw.includes('pocketledger-v11')],
+            ['four bottom navigation tabs', (html.match(/class="nav-btn/g) || []).length === 4],
+            ['analytics embedded in Home', html.indexOf('id="analyticsScreen"') < html.indexOf('<!-- BUDGET SCREEN -->')],
+            ['accounts embedded in Settings', html.indexOf('id="accountsScreen"') > html.indexOf('id="settingsScreen"')]
           ];
           for (const [label, ok] of checks) console.log(`${ok ? 'PASS' : 'FAIL'}: ${label}`);
           if (checks.some(([, ok]) => !ok)) process.exit(1);
