@@ -224,60 +224,6 @@
     </section>
   </section>
 
-  <!-- ANALYTICS CONTENT IS PART OF HOME -->
-  <section id="accountsScreen" class="screen accounts-screen">
-    <div class="section-heading"><h2>Accounts</h2><small>IDR · Local only</small></div>
-    <section class="account-summary">
-      <div><small>Total assets</small><strong id="totalAssets">Rp0</strong></div>
-      <div><small>Total liabilities</small><strong id="totalLiabilities">Rp0</strong></div>
-      <div class="net-worth"><small>Net worth</small><strong id="netWorth">Rp0</strong></div>
-    </section>
-    <section class="section credit-card-section">
-      <div class="section-heading"><h3>Credit cards</h3><small>Credit facilities</small></div>
-      <p class="account-note">Credit limits are purchasing capacity, not assets. Outstanding balances remain included in total liabilities and net worth.</p>
-      <div id="creditCardList" class="credit-card-list"></div>
-    </section>
-    <section class="section">
-      <h3>Other accounts & liabilities</h3>
-      <p class="account-note">Balances are calculated from opening balances and recorded ledger activity. Older transactions remain unassigned until you link them.</p>
-      <div id="accountList" class="account-list"></div>
-    </section>
-    <section class="section account-form-card">
-      <h3>Add account</h3>
-      <form id="accountForm">
-        <label>Account name<input id="accountName" maxlength="60" placeholder="BCA Main Account" required></label>
-        <div class="two">
-          <label>Account type<select id="accountType">
-            <option>Bank</option><option>Cash</option><option>E-wallet</option><option>Savings</option><option>Investment</option><option>Property</option><option>Vehicle</option><option>Credit card</option><option>Personal loan</option><option>Mortgage</option><option>Other liability</option>
-          </select></label>
-          <label>Classification<select id="accountClassification"><option value="asset">Asset</option><option value="liability">Liability</option></select></label>
-        </div>
-        <label id="creditLimitField" class="credit-limit-field" hidden>Credit limit (IDR)<input id="creditLimit" type="number" inputmode="numeric" min="1" step="1" value="0" data-sensitive-input></label>
-        <div id="creditDetailsFields" class="credit-details-fields" hidden>
-          <label>Statement day<input id="statementDay" type="number" min="1" max="31" placeholder="e.g. 20"></label>
-          <label>Payment due day<input id="dueDay" type="number" min="1" max="31" placeholder="e.g. 5"></label>
-          <label>Minimum payment (IDR)<input id="minimumPayment" type="number" min="0" step="1" value="0" data-sensitive-input></label>
-          <label>Repayment account<select id="paymentAccount"><option value="">Choose later</option></select></label>
-        </div>
-        <label>Opening balance (IDR)<input id="openingBalance" type="number" inputmode="numeric" min="0" step="1" value="0" data-sensitive-input required></label>
-        <label>Opening balance date<input id="openingDate" type="date" required></label>
-        <button class="primary" type="submit">Add account</button><p id="accountStatus" role="status"></p>
-      </form>
-    </section>
-    <section class="section account-form-card">
-      <h3>Transfer between accounts</h3>
-      <p class="account-note">Transfers do not count as income or expenses. Paying a credit card reduces its outstanding liability.</p>
-      <form id="transferForm">
-        <label>From account<select id="transferFrom" required><option value="">Choose account</option></select></label>
-        <label>To account<select id="transferTo" required><option value="">Choose account</option></select></label>
-        <label>Amount (IDR)<input id="transferAmount" type="number" inputmode="numeric" min="1" step="1" data-sensitive-input required></label>
-        <label>Date<input id="transferDate" type="date" required></label>
-        <label>Note<input id="transferDescription" maxlength="80" placeholder="Monthly card payment"></label>
-        <button class="primary" type="submit">Save transfer</button><p id="transferStatus" role="status"></p>
-      </form>
-    </section>
-  </section>
-
   <dialog id="accountEditDialog" class="edit-dialog">
     <form id="accountEditForm" method="dialog">
       <div class="section-heading"><h3 id="accountEditTitle">Edit account</h3><button type="button" class="delete" id="closeAccountEdit">Close</button></div>
