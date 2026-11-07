@@ -200,7 +200,7 @@
   </section>
 
   <!-- ACCOUNTS SCREEN -->
-  <section id="accountsScreen" class="screen">
+  <section id="accountsScreen" class="screen accounts-screen">
     <div class="section-heading"><h2>Accounts</h2><small>IDR · Local only</small></div>
     <section class="account-summary">
       <div><small>Total assets</small><strong id="totalAssets">Rp0</strong></div>
@@ -310,6 +310,7 @@
       </label>
 
       <label>Category
+        <div class="category-input-row"><span id="categoryIconPreview" class="category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 2v7a3 3 0 0 0 3 3v10M6 2v5M9 2v5M6 12v10M18 2v20M18 2c-2 2-3 5-3 8h3"/></svg></span>
         <select id="category">
           <option>Food</option>
           <option>Transport</option>
@@ -322,7 +323,7 @@
           <option>Business</option>
           <option>Investment</option>
           <option>Other</option>
-        </select>
+        </select></div>
       </label>
 
       <button class="primary" type="submit">Add transaction</button>

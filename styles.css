@@ -770,3 +770,130 @@ footer {
   border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px;
   background: #fff; color: var(--ink); font-weight: 600;
 }
+
+
+/* ACCOUNTS WORKSPACE — visually distinct from the day-to-day ledger */
+.accounts-screen {
+  background: #edf2ec;
+  border: 1px solid #dce6dc;
+  border-radius: 24px;
+  padding: 22px 16px 28px;
+  margin: 8px -4px 24px;
+}
+.accounts-screen .section-heading {
+  padding: 4px 2px 18px;
+  align-items: baseline;
+}
+.accounts-screen .section-heading h2 {
+  color: #244235;
+  letter-spacing: -0.04em;
+}
+.accounts-screen .section-heading small {
+  color: #61766a;
+}
+.accounts-screen .account-summary {
+  background: #ffffff;
+  border: 1px solid #dce6dc;
+  box-shadow: 0 8px 24px rgba(34, 65, 49, 0.05);
+  border-radius: 20px;
+  padding: 20px;
+}
+.accounts-screen .section {
+  margin-top: 22px;
+}
+.accounts-screen .account-row,
+.accounts-screen .account-form-card {
+  background: #fff;
+  border: 1px solid #dce6dc;
+  border-radius: 17px;
+}
+.accounts-screen .account-note {
+  color: #68786e;
+}
+.accounts-screen .account-form-card {
+  padding: 18px;
+}
+.accounts-screen .account-row {
+  padding: 17px;
+  margin-bottom: 12px;
+}
+
+/* Compact navigation footprint while retaining comfortable tap targets. */
+.bottom-nav {
+  gap: 3px;
+  padding: 7px 12px max(8px, env(safe-area-inset-bottom));
+}
+.nav-btn {
+  gap: 3px;
+  padding: 5px 3px;
+  font-size: 10px;
+}
+.nav-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Transaction list amounts are concealed independently of global privacy mode. */
+#transactionsScreen .transaction .amount {
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Contextual account cards: tap a row/card to open its editor. */
+.account-card-interactive { cursor: pointer; text-align: left; width: 100%; }
+.account-card-interactive:focus-visible { outline: 3px solid #8db8a1; outline-offset: 3px; }
+.account-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.account-row > div { min-width: 0; }
+.account-row .account-value { margin-left: auto; }
+.credit-card { cursor: pointer; }
+.credit-card:focus-visible { outline: 3px solid #8db8a1; outline-offset: 3px; }
+
+/* Net-worth hero follows the approved Accounts preview. */
+.accounts-screen .account-summary {
+  background: linear-gradient(145deg, #123f2d, #1e5a40);
+  color: #fff;
+  border: 0;
+  border-radius: 22px;
+  padding: 22px;
+  box-shadow: 0 12px 28px rgba(23, 63, 48, .16);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.accounts-screen .account-summary small { color: #d6e5dc; }
+.accounts-screen .account-summary strong { color: #fff; }
+.accounts-screen .account-summary .net-worth {
+  grid-column: 1 / -1;
+  border-top: 1px solid rgba(255,255,255,.24);
+  padding-top: 15px;
+}
+.accounts-screen .account-summary .net-worth strong {
+  display: block;
+  font-size: clamp(27px, 7vw, 36px);
+  letter-spacing: -.045em;
+  margin-top: 5px;
+}
+.accounts-screen .account-row {
+  background: #fff;
+  border: 1px solid #dce6dc;
+  border-radius: 17px;
+  padding: 17px;
+  margin-bottom: 11px;
+  color: var(--ink);
+  box-shadow: 0 5px 16px rgba(34,65,49,.035);
+}
+.accounts-screen .account-row strong { display:block; }
+.accounts-screen .account-row small { display:block; color: #68786e; margin-top: 4px; }
+.accounts-screen .account-row .account-value { white-space: nowrap; }
+.accounts-screen .section h3 { color: #244235; }
+.accounts-screen .account-note { color: #68786e; }
+
+
+/* Automatic category icons */
+.category-input-row { display:flex; align-items:center; gap:10px; }
+.category-input-row select { flex:1; }
+.category-icon, .transaction-category-icon { display:grid; place-items:center; flex:0 0 34px; width:34px; height:34px; border-radius:11px; background:#edf3ec; color:#587462; }
+.category-icon svg, .transaction-category-icon svg { width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.65; stroke-linecap:round; stroke-linejoin:round; }
+.transaction-info { flex:1; min-width:0; }
+.transaction-category-icon { width:34px; height:34px; flex-basis:34px; }

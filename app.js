@@ -1,6 +1,24 @@
 
 const $ = id => document.getElementById(id);
 
+const CATEGORY_ICON_PATHS = {
+  Food: '<path d="M3 2v7a3 3 0 0 0 3 3v10M6 2v5M9 2v5M6 12v10M18 2v20M18 2c-2 2-3 5-3 8h3"/>',
+  Transport: '<path d="M5 17h14l1-6-2-5H6l-2 5 1 6Z"/><path d="M5 11h14M7 17v3m10-3v3M7 14h.01M17 14h.01"/>',
+  Shopping: '<path d="M5 8h14l1 13H4L5 8Z"/><path d="M9 8a3 3 0 0 1 6 0"/>',
+  Housing: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10Z"/><path d="M9 21v-7h6v7"/>',
+  Bills: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+  Health: '<path d="M12 21s-8-4.5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.5-8 11-8 11Z"/><path d="M8 12h8m-4-4v8"/>',
+  Entertainment: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3V9Z"/>',
+  Salary: '<path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+  Business: '<rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V4h8v3M3 12h18M10 12v2h4v-2"/>',
+  Investment: '<path d="m3 17 6-6 4 4 8-9"/><path d="M15 6h6v6"/>',
+  Other: '<circle cx="12" cy="12" r="9"/><path d="M12 8v8m-4-4h8"/>'
+};
+function categoryIcon(category) {
+  const drawing = CATEGORY_ICON_PATHS[category] || CATEGORY_ICON_PATHS.Other;
+  return `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">${drawing}</svg>`;
+}
+
 const money = n => new Intl.NumberFormat("id-ID", {
   style: "currency",
   currency: "IDR",
@@ -391,7 +409,13 @@ async function renderTransactions() {
     const row = document.createElement("div");
     row.className = "transaction";
 
+    const icon = document.createElement("div");
+    icon.className = "transaction-category-icon";
+    icon.innerHTML = categoryIcon(item.category);
+    icon.setAttribute("aria-hidden", "true");
+
     const info = document.createElement("div");
+    info.className = "transaction-info";
 
     const title = document.createElement("div");
     title.className = "description";
@@ -428,7 +452,7 @@ async function renderTransactions() {
     };
 
     right.append(amount, button);
-    row.append(info, right);
+    row.append(icon, info, right);
     list.append(row);
   }
 }
@@ -851,7 +875,7 @@ async function renderAccountSelectors() {
   if (select) {
     const previous = select.value;
     select.replaceChildren(new Option("Unassigned — excluded from account balances", ""));
-    accounts.forEach(account => select.add(new Option(`${account.name} · ${money(account.balance)}`, account.id)));
+    accounts.forEach(account => select.add(new Option(account.name, account.id)));
     if (accounts.some(account => account.id === previous)) select.value = previous;
   }
   const from = $("transferFrom"), to = $("transferTo");
@@ -898,19 +922,23 @@ async function renderAccounts() {
     const track=document.createElement("div"); track.className="credit-usage-track";
     const fill=document.createElement("div"); fill.className="credit-usage-fill"; fill.style.width=`${usage}%`; track.append(fill);
     const usageLabel=document.createElement("small"); usageLabel.className="credit-usage-label"; usageLabel.textContent=limit?`${usage.toFixed(0)}% of limit used`:"Add a limit to calculate available credit";
-    const edit=document.createElement("button"); edit.className="secondary-button"; edit.textContent="Edit card"; edit.onclick=()=>openAccountEditor(account);
-    card.append(top,label,balance,metrics,track,usageLabel,edit); cardList.append(card);
+    card.classList.add("account-card-interactive");
+    card.setAttribute("role", "button");
+    card.setAttribute("tabindex", "0");
+    card.setAttribute("aria-label", `Open ${account.name} details`);
+    card.addEventListener("click", () => openAccountEditor(account));
+    card.addEventListener("keydown", event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openAccountEditor(account); } });
+    card.append(top,label,balance,metrics,track,usageLabel); cardList.append(card);
   });
   const list=$("accountList"); list.replaceChildren();
   if (!others.length) { const empty=document.createElement("p"); empty.className="empty"; empty.textContent="No other accounts yet. Add bank, cash, savings, investment or liability accounts below."; list.append(empty); }
   others.forEach(account=>{
-    const row=document.createElement("div"); row.className="account-row";
+    const row=document.createElement("button"); row.type="button"; row.className="account-row account-card-interactive";
+    row.addEventListener("click", () => openAccountEditor(account));
     const info=document.createElement("div"); const name=document.createElement("strong"); name.textContent=account.name;
     const meta=document.createElement("small"); meta.textContent=`${account.type} · ${account.active===false?"Archived":account.classification==="liability"?"Liability":"Asset"}`; info.append(name,meta);
     const value=document.createElement("strong"); value.className="account-value"; setSensitiveText(value,money(account.balance)); row.append(info,value);
-    const edit=document.createElement("button"); edit.className="secondary-button"; edit.textContent="Edit"; edit.onclick=()=>openAccountEditor(account); row.append(edit);
-    const archive=document.createElement("button"); archive.className="delete"; archive.textContent=account.active===false?"Archived":"Archive"; archive.disabled=account.active===false;
-    archive.onclick=async()=>{if(!confirm(`Archive ${account.name}? Historical entries will be kept.`))return;await operation("accounts","readwrite",s=>s.put({...account,active:false,updatedAt:new Date().toISOString()}));await refreshAll();}; row.append(archive); list.append(row);
+    list.append(row);
   });
   await renderAccountSelectors();
 }
@@ -920,6 +948,8 @@ async function openAccountEditor(account) {
   $("editAccountName").value=account.name;
   $("editAccountType").value=account.type;
   $("editAccountClassification").value=account.classification;
+  $("editAccountType").disabled = true;
+  $("editAccountClassification").disabled = true;
   const isCard=account.type==="Credit card";
   $("editCreditFields").hidden=!isCard;
   $("editCreditLimit").value=account.creditLimit||"";
@@ -941,10 +971,10 @@ $("accountEditForm").onsubmit=async event=>{
   event.preventDefault();
   const id=$("editAccountId").value, accounts=await allAccounts(), old=accounts.find(a=>a.id===id);
   if(!old){$("editAccountStatus").textContent="Account not found.";return;}
-  const type=$("editAccountType").value, isCard=type==="Credit card";
+  const type=old.type, isCard=type==="Credit card";
   const limit=Number($("editCreditLimit").value||0);
   if(isCard&&(!Number.isSafeInteger(limit)||limit<=0)){$("editAccountStatus").textContent="Enter a valid credit limit.";return;}
-  const updated={...old,name:$("editAccountName").value.trim(),type,classification:$("editAccountClassification").value,
+  const updated={...old,name:$("editAccountName").value.trim(),type,classification:old.classification,
     creditLimit:isCard?limit:null,statementDay:isCard?(Number($("editStatementDay").value)||null):null,
     dueDay:isCard?(Number($("editDueDay").value)||null):null,minimumPayment:isCard?Number($("editMinimumPayment").value||0):0,
     paymentAccountId:isCard?($("editPaymentAccount").value||null):null,updatedAt:new Date().toISOString()};
@@ -1036,6 +1066,10 @@ $("transferForm").onsubmit = async event => {
 };
 
 // ADD TRANSACTION
+
+$("category").addEventListener("change", () => {
+  $("categoryIconPreview").innerHTML = categoryIcon($("category").value);
+});
 
 $("form").onsubmit = async event => {
   event.preventDefault();
