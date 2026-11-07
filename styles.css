@@ -1280,3 +1280,23 @@ input[type="date"], input[type="month"] {
   padding: 10px 14px; background: #edf4ee; color: #315c49;
   font-size: 13px; font-weight: 700;
 }
+
+
+/* Budget warning threshold: alert from 75% usage, not only after overspending. */
+.progress-fill.budget-warning,
+.category-track .progress-fill.budget-warning {
+  background: #bd5148;
+}
+.budget-alert {
+  display: none;
+  margin: 10px 0 0;
+  color: #ffd4ce;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+.budget-alert.visible { display: block; }
+.budget-alert-text {
+  color: #b4473d !important;
+  font-weight: 700;
+}
