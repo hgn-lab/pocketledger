@@ -1,1 +1,1 @@
-{"name":"PocketLedger","short_name":"PocketLedger","description":"Private personal finance tracker","start_url":"./","scope":"./","display":"standalone","background_color":"#f7f7f5","theme_color":"#203e32","icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}]}
+{"name":"PocketLedger","short_name":"PocketLedger","description":"Private personal finance tracker","start_url":"./","scope":"./","display":"browser","background_color":"#f7f7f5","theme_color":"#203e32","icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}]}
