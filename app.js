@@ -52,6 +52,7 @@ function currentMonth() {
 
 let db;
 let dashboardPeriod = "monthly";
+let budgetPeriod = "monthly";
 
 // Privacy preference is stored separately from financial records.
 let balancesHidden = false;
@@ -298,6 +299,7 @@ function showScreen(screenId) {
 
   if (screenId === "budgetsScreen") {
     renderBudgets().catch(console.error);
+    renderGoals().catch(console.error);
   }
 
   if (screenId === "homeScreen") {
@@ -502,7 +504,34 @@ function budgetId(month, category) {
   return `${category === "GLOBAL" ? "global" : "category"}:${month}:${category}`;
 }
 
+async function renderBudgetPeriodSummary() {
+  const transactions = await all();
+  const selectedDate = $("budgetDay").value || localDate();
+  const selectedYear = Number($("budgetYear").value) || Number(localDate().slice(0,4));
+  const rows = budgetPeriod === "daily"
+    ? transactions.filter(item => item.date === selectedDate)
+    : transactions.filter(item => item.date.startsWith(String(selectedYear) + "-"));
+  const income = rows.filter(item => item.type === "income").reduce((sum,item) => sum + Number(item.amount || 0),0);
+  const expenses = rows.filter(item => item.type === "expense").reduce((sum,item) => sum + Number(item.amount || 0),0);
+  const summary = $("budgetPeriodSummary"); summary.replaceChildren();
+  const cards = budgetPeriod === "daily"
+    ? [["Spent today",money(expenses)],["Income today",money(income)],["Net today",money(income-expenses)],["Transactions",String(rows.length)]]
+    : [["Annual spending",money(expenses)],["Annual income",money(income)],["Net savings",money(income-expenses)],["Monthly avg. spending",money(expenses/12)]];
+  cards.forEach(([label,value]) => { const card=document.createElement("div");card.className="insight-card";const title=document.createElement("span");title.textContent=label;const amount=document.createElement("strong");if(label==="Transactions")amount.textContent=value;else setSensitiveText(amount,value);card.append(title,amount);summary.append(card); });
+  const totals={}; rows.filter(item=>item.type==="expense").forEach(item=>{const key=item.category||"Other";totals[key]=(totals[key]||0)+Number(item.amount||0);});
+  const list=$("budgetPeriodCategories");list.replaceChildren();const sorted=Object.entries(totals).sort((x,y)=>y[1]-x[1]);
+  if(!sorted.length){const empty=document.createElement("p");empty.className="empty";empty.textContent=budgetPeriod==="daily"?"No spending recorded for this day.":"No spending recorded for this year.";list.append(empty);}
+  const max=Math.max(1,...sorted.map(x=>x[1]));
+  sorted.forEach(([name,amount])=>{const row=document.createElement("div");row.className="analytics-category";const top=document.createElement("div");top.className="analytics-category-top";const label=document.createElement("strong");label.textContent=name;const value=document.createElement("span");setSensitiveText(value,money(amount));top.append(label,value);const track=document.createElement("div");track.className="progress-track analytics-track";const fill=document.createElement("div");fill.className="progress-fill analytics-fill";fill.style.width=(amount/max*100)+"%";track.append(fill);row.append(top,track);list.append(row);});
+}
 async function renderBudgets() {
+  document.querySelectorAll("[data-budget-period]").forEach(button=>button.classList.toggle("active",button.dataset.budgetPeriod===budgetPeriod));
+  $("budgetDayControl").hidden=budgetPeriod!=="daily";
+  $("budgetMonthControl").hidden=budgetPeriod!=="monthly";
+  $("budgetYearControl").hidden=budgetPeriod!=="yearly";
+  $("budgetPeriodView").hidden=budgetPeriod==="monthly";
+  $("monthlyBudgetView").hidden=budgetPeriod!=="monthly";
+  if(budgetPeriod!=="monthly"){await renderBudgetPeriodSummary();return;}
   const month = $("budgetMonth").value || currentMonth();
 
   const [transactions, budgets] = await Promise.all([
@@ -1634,7 +1663,7 @@ async function refreshAll() {
   await render();
   await renderTransactions();
   await renderAccounts();
-  if ($("goalsScreen").classList.contains("active")) await renderGoals();
+  if ($("budgetsScreen").classList.contains("active")) await renderGoals();
 
   if ($("budgetsScreen").classList.contains("active")) {
     await renderBudgets();
@@ -1664,8 +1693,10 @@ document.querySelectorAll("[data-go-screen]").forEach(button => {
 $("month").onchange = () =>
   render().catch(console.error);
 
-$("budgetMonth").onchange = () =>
-  renderBudgets().catch(console.error);
+$("budgetMonth").onchange = () => renderBudgets().catch(console.error);
+$("budgetDay").onchange = () => renderBudgets().catch(console.error);
+$("budgetYear").onchange = () => renderBudgets().catch(console.error);
+document.querySelectorAll("[data-budget-period]").forEach(button => button.addEventListener("click", () => { budgetPeriod=button.dataset.budgetPeriod; renderBudgets().catch(console.error); }));
 $("analyticsMonth").onchange = () =>
   renderAnalytics().catch(console.error);
 document.querySelectorAll(".period-btn").forEach(button => {
@@ -1726,6 +1757,8 @@ $("export").onclick = async () => {
     $("transferDate").value = localDate();
     $("month").value = localDate();
     $("budgetMonth").value = currentMonth();
+    $("budgetDay").value = localDate();
+    $("budgetYear").value = localDate().slice(0,4);
 $("analyticsMonth").value = currentMonth();
     await refreshAll();
 
