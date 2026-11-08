@@ -487,7 +487,15 @@ async function renderTransactions() {
 
     button.onclick = async () => {
       if (confirm("Delete this transaction?")) {
-        await remove(item.id);
+        await atomicWrite(["transactions", "journalEntries"], tx => {
+          tx.objectStore("transactions").delete(item.id);
+          const entries = tx.objectStore("journalEntries");
+          entries.getAll().onsuccess = event => {
+            event.target.result
+              .filter(entry => entry.transactionId === item.id)
+              .forEach(entry => entries.delete(entry.id));
+          };
+        });
         await refreshAll();
       }
     };
@@ -1704,6 +1712,119 @@ document.querySelectorAll(".period-btn").forEach(button => {
     dashboardPeriod = button.dataset.period;
     render().catch(console.error);
   });
+});
+
+// ENCRYPTED FULL-DATABASE BACKUP / RESTORE
+const BACKUP_FORMAT = "pocketledger-encrypted-backup";
+const BACKUP_VERSION = 1;
+const BACKUP_STORES = ["transactions", "budgets", "accounts", "journalEntries", "transfers", "savingsGoals"];
+
+function bytesToBase64(bytes) {
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(binary);
+}
+function base64ToBytes(value) {
+  const binary = atob(value);
+  return Uint8Array.from(binary, character => character.charCodeAt(0));
+}
+async function deriveBackupKey(password, salt) {
+  const material = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt, iterations: 310000, hash: "SHA-256" },
+    material, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]
+  );
+}
+async function collectBackupData() {
+  const data = {};
+  for (const storeName of BACKUP_STORES) data[storeName] = await operation(storeName, "readonly", store => store.getAll());
+  return data;
+}
+function downloadBackup(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url; link.download = filename; link.style.display = "none";
+  document.body.append(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+$("createBackup").addEventListener("click", async () => {
+  const status = $("backupStatus"), password = $("backupPassword").value;
+  if (password.length < 12) { status.textContent = "Use a backup password with at least 12 characters."; return; }
+  if (!globalThis.crypto?.subtle) { status.textContent = "Secure encryption is unavailable in this browser. Update Safari and try again."; return; }
+  const button = $("createBackup"); button.disabled = true;
+  try {
+    const payload = new TextEncoder().encode(JSON.stringify({
+      format: BACKUP_FORMAT, version: BACKUP_VERSION, createdAt: new Date().toISOString(),
+      currency: "IDR", data: await collectBackupData()
+    }));
+    const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+    const key = await deriveBackupKey(password, salt);
+    const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, payload);
+    const file = {
+      format: BACKUP_FORMAT, version: BACKUP_VERSION, cipher: "AES-256-GCM",
+      kdf: "PBKDF2-SHA-256", iterations: 310000, salt: bytesToBase64(salt),
+      iv: bytesToBase64(iv), ciphertext: bytesToBase64(new Uint8Array(encrypted))
+    };
+    downloadBackup(new Blob([JSON.stringify(file)], { type: "application/json" }), `pocketledger-backup-${localDate()}.json`);
+    status.textContent = "Encrypted full backup created. Save the file somewhere safe; you will need this password to restore it.";
+    showToast("Encrypted backup created.");
+  } catch (error) {
+    console.error(error); status.textContent = "Backup failed. Your existing records were not changed.";
+  } finally { button.disabled = false; }
+});
+$("chooseBackup").addEventListener("click", () => $("backupFile").click());
+$("backupFile").addEventListener("change", async event => {
+  const file = event.target.files?.[0], status = $("backupStatus");
+  if (!file) return;
+  const password = $("backupPassword").value;
+  if (password.length < 12) {
+    status.textContent = "Enter the backup password (at least 12 characters) before restoring.";
+    event.target.value = ""; return;
+  }
+  if (file.size > 50 * 1024 * 1024) {
+    status.textContent = "This backup is larger than the 50 MB safety limit.";
+    event.target.value = ""; return;
+  }
+  try {
+    const envelope = JSON.parse(await file.text());
+    if (envelope.format !== BACKUP_FORMAT || envelope.version !== BACKUP_VERSION ||
+        envelope.cipher !== "AES-256-GCM" || envelope.kdf !== "PBKDF2-SHA-256") {
+      throw new Error("This file is not a supported PocketLedger backup.");
+    }
+    const key = await deriveBackupKey(password, base64ToBytes(envelope.salt));
+    const decrypted = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: base64ToBytes(envelope.iv) }, key, base64ToBytes(envelope.ciphertext)
+    );
+    const payload = JSON.parse(new TextDecoder().decode(decrypted));
+    if (payload.format !== BACKUP_FORMAT || payload.version !== BACKUP_VERSION ||
+        !payload.data || !BACKUP_STORES.every(name => Array.isArray(payload.data[name]))) {
+      throw new Error("Backup contents are incomplete or unsupported.");
+    }
+    for (const name of BACKUP_STORES) {
+      for (const record of payload.data[name]) {
+        if (!record || typeof record !== "object" || Array.isArray(record) || !("id" in record)) {
+          throw new Error("Backup contains an invalid record. No data was changed.");
+        }
+      }
+    }
+    const counts = BACKUP_STORES.map(name => `${name}: ${payload.data[name].length}`).join("\n");
+    if (!confirm("Restore this backup?\n\nThis replaces the records currently stored in this browser with the records in the backup. Export a backup of current data first if you may need it.\n\n" + counts)) return;
+    await atomicWrite(BACKUP_STORES, tx => {
+      for (const name of BACKUP_STORES) {
+        const store = tx.objectStore(name);
+        store.clear();
+        payload.data[name].forEach(record => store.put(record));
+      }
+    });
+    status.textContent = "Restore completed. All six data stores have been restored.";
+    showToast("Backup restored successfully.");
+    await refreshAll();
+  } catch (error) {
+    console.error(error);
+    status.textContent = error.name === "OperationError"
+      ? "Could not decrypt this backup. Check the password and try again."
+      : (error.message || "Restore failed. Your existing records were not changed.");
+  } finally { event.target.value = ""; }
 });
 
 // EXPORT ALL TRANSACTIONS
