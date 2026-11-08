@@ -1388,6 +1388,15 @@ $("form").onsubmit = async event => {
   }
 };
 
+// iOS Safari: dismiss the keyboard after a form is submitted.
+document.addEventListener("submit", event => {
+  const active = document.activeElement;
+  if (active && event.target instanceof HTMLFormElement && event.target.contains(active)
+      && active.matches("input, select, textarea")) {
+    active.blur();
+  }
+}, true);
+
 // SETTINGS SEGMENTED NAVIGATION
 document.querySelectorAll("[data-settings-tab]").forEach(button => {
   button.addEventListener("click", () => {
