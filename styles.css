@@ -1387,3 +1387,46 @@ input[type="date"], input[type="month"] {
 .cashflow-fill { height:100%; border-radius:inherit; min-width:0; }
 .cashflow-fill.income { background:#4d8064; }
 .cashflow-fill.expense { background:#bd6558; }
+
+
+/* Home overview heading and date control: balanced, aligned sizing. */
+#homeScreen > .month {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  margin: 22px 0 12px;
+}
+#homeScreen > .month > b {
+  font-size: 18px;
+  line-height: 1.2;
+  letter-spacing: -.35px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+#homeScreen > .month > input[type="date"] {
+  flex: 0 1 180px;
+  width: auto;
+  max-width: 180px;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 10px 9px;
+  font-size: 16px;
+  line-height: 1.2;
+  text-align: center;
+}
+@media (max-width: 370px) {
+  #homeScreen > .month { gap: 8px; }
+  #homeScreen > .month > b { font-size: 17px; }
+  #homeScreen > .month > input[type="date"] { flex-basis: 160px; max-width: 160px; }
+}
+
+/* iOS Safari zooms the page when a focused form control is smaller than 16px. */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
