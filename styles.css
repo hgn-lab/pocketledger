@@ -1441,3 +1441,24 @@ input[type="date"], input[type="month"] {
 .networth-trend svg { display:block; width:100%; height:auto; overflow:visible; }
 .networth-month-labels { display:flex; justify-content:space-between; gap:6px; margin-top:4px; color:var(--muted); font-size:9px; }
 .analytics-footnote { margin:9px 2px 0; color:var(--muted); font-size:10px; line-height:1.5; }
+
+
+/* Savings goals and debt management. */
+.goals-screen .section { margin-top:20px; }
+.goal-list { display:grid; gap:11px; }
+.goal-card { padding:16px; border:1px solid var(--line); border-radius:16px; background:#fff; display:grid; gap:11px; }
+.goal-card-top,.goal-amounts,.goal-card-footer,.goal-debt-row { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.goal-card-top strong { font-size:14px; }
+.goal-card-top span { color:#47775a; font-size:12px; font-weight:700; }
+.goal-amounts strong { color:#315c49; font-size:17px; }
+.goal-amounts span,.goal-card-footer small,.goal-debt-row small { color:var(--muted); font-size:10px; }
+.goal-progress { height:8px; }
+.goal-card-footer { flex-wrap:wrap; }
+.goal-actions { display:flex; gap:7px; }
+.goal-actions button { padding:8px 10px; font-size:11px; }
+.goal-debt-total { padding:16px; border-radius:15px; background:#f0f5ef; display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.goal-debt-total span { color:var(--muted); font-size:11px; }
+.goal-debt-total strong { color:#315c49; font-size:18px; }
+.goal-debt-row { padding:12px 2px; border-bottom:1px solid var(--line); }
+.goal-debt-row > div { display:grid; gap:4px; }
+.goal-debt-row > strong { color:#b4473d; font-size:13px; }
