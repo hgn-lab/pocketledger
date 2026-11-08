@@ -831,6 +831,96 @@ async function renderAnalytics() {
     insight.textContent = "No expenses recorded this month. Keep tracking to build your spending history.";
   }
 
+
+  // Reconstruct historical month-end net worth from account opening balances and dated ledger entries.
+  // Credit limits are intentionally excluded: only each liability account's outstanding balance is counted.
+  const [accounts, journalEntries] = await Promise.all([allAccounts(), allJournalEntries()]);
+  const netWorthMonths = [];
+  for (let offset = 11; offset >= 0; offset--) {
+    const monthDate = new Date(selectedYear, selectedMonthNumber - 1 - offset, 1);
+    const key = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, "0")}`;
+    const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+    let cutoff = `${monthEnd.getFullYear()}-${String(monthEnd.getMonth() + 1).padStart(2, "0")}-${String(monthEnd.getDate()).padStart(2, "0")}`;
+    const today = localDate();
+    if (cutoff > today) cutoff = today;
+    let assetsAtDate = 0;
+    let liabilitiesAtDate = 0;
+    for (const account of accounts) {
+      const openingDate = account.openingBalanceDate || (account.createdAt || "").slice(0, 10);
+      if (!openingDate || openingDate > cutoff) continue;
+      const archivedDate = account.archivedAt ? account.archivedAt.slice(0, 10) : null;
+      if (archivedDate && archivedDate <= cutoff) continue;
+      const movement = journalEntries
+        .filter(entry => entry.accountId === account.id && entry.date >= openingDate && entry.date <= cutoff)
+        .reduce((sum, entry) => sum + Number(entry.balanceDelta || 0), 0);
+      const balanceAtDate = Number(account.openingBalance || 0) + movement;
+      if (account.classification === "asset") assetsAtDate += balanceAtDate;
+      else if (account.classification === "liability") liabilitiesAtDate += balanceAtDate;
+    }
+    netWorthMonths.push({
+      key, label: monthDate.toLocaleDateString("en-ID", { month: "short", year: "2-digit" }),
+      assets: assetsAtDate, liabilities: liabilitiesAtDate,
+      netWorth: assetsAtDate - liabilitiesAtDate
+    });
+  }
+  const netWorthContainer = $("netWorthTrend");
+  netWorthContainer.replaceChildren();
+  const latestNetWorth = netWorthMonths[netWorthMonths.length - 1];
+  const firstNetWorth = netWorthMonths.find(item => item.assets !== 0 || item.liabilities !== 0);
+  setSensitiveText($("historicalNetWorthValue"), money(latestNetWorth.netWorth));
+  if (firstNetWorth && firstNetWorth.key !== latestNetWorth.key) {
+    const change = latestNetWorth.netWorth - firstNetWorth.netWorth;
+    const label = change > 0 ? "increased" : change < 0 ? "decreased" : "unchanged";
+    setSensitiveText($("historicalNetWorthChange"),
+      `${money(Math.abs(change))} ${label} since ${firstNetWorth.label}`);
+  } else {
+    $("historicalNetWorthChange").textContent = "History starts with your recorded opening balances.";
+  }
+  const chartValues = netWorthMonths.map(item => item.netWorth);
+  const minValue = Math.min(0, ...chartValues);
+  const maxValue = Math.max(1, ...chartValues);
+  const range = Math.max(1, maxValue - minValue);
+  const width = 320, height = 132, left = 8, right = 312, top = 10, bottom = 112;
+  const points = netWorthMonths.map((item, index) => ({
+    x: left + (right-left) * index / Math.max(1, netWorthMonths.length-1),
+    y: bottom - ((item.netWorth-minValue)/range) * (bottom-top)
+  }));
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", "Reconstructed net worth trend over the last twelve months");
+  const zeroY = bottom - ((0-minValue)/range) * (bottom-top);
+  const baseline = document.createElementNS(svgNS, "line");
+  baseline.setAttribute("x1", String(left)); baseline.setAttribute("x2", String(right));
+  baseline.setAttribute("y1", String(zeroY)); baseline.setAttribute("y2", String(zeroY));
+  baseline.setAttribute("stroke", "#dfe5df"); baseline.setAttribute("stroke-dasharray", "3 4");
+  svg.append(baseline);
+  if (points.length > 1) {
+    const line = document.createElementNS(svgNS, "polyline");
+    line.setAttribute("points", points.map(point => `${point.x},${point.y}`).join(" "));
+    line.setAttribute("fill", "none"); line.setAttribute("stroke", "#47775a");
+    line.setAttribute("stroke-width", "3"); line.setAttribute("stroke-linecap", "round");
+    line.setAttribute("stroke-linejoin", "round");
+    svg.append(line);
+  }
+  points.forEach((point,index) => {
+    const dot = document.createElementNS(svgNS, "circle");
+    dot.setAttribute("cx", String(point.x)); dot.setAttribute("cy", String(point.y));
+    dot.setAttribute("r", index === points.length-1 ? "4" : "2.2");
+    dot.setAttribute("fill", "#47775a");
+    svg.append(dot);
+  });
+  netWorthContainer.append(svg);
+  const labels = document.createElement("div");
+  labels.className = "networth-month-labels";
+  [netWorthMonths[0], netWorthMonths[3], netWorthMonths[7], netWorthMonths[11]].forEach(item => {
+    const label = document.createElement("span");
+    label.textContent = item.label;
+    labels.append(label);
+  });
+  netWorthContainer.append(labels);
+
   // Six-month income and expense comparison.
   const trendMonths = [];
   for (let offset = 5; offset >= 0; offset--) {
