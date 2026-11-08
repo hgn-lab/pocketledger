@@ -236,22 +236,7 @@ function ledgerEntry(account, amount, direction, date, details) {
 // DATE HELPERS
 
 function getPeriodRange(date, period) {
-  const [year, month, day] = date.split("-").map(Number);
-
-  if (period === "daily") {
-    return [date, date];
-  }
-
-  if (period === "monthly") {
-    const lastDay = new Date(year, month, 0).getDate();
-
-    return [
-      `${year}-${String(month).padStart(2, "0")}-01`,
-      `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`
-    ];
-  }
-
-  return [`${year}-01-01`, `${year}-12-31`];
+  return PocketLedgerCore.getPeriodRange(date, period);
 }
 
 function periodDescription(date, period) {
@@ -517,17 +502,20 @@ async function renderBudgetPeriodSummary() {
   const transactions = await all();
   const selectedDate = $("budgetDay").value || localDate();
   const selectedYear = Number($("budgetYear").value) || Number(localDate().slice(0,4));
-  const rows = budgetPeriod === "daily"
-    ? transactions.filter(item => item.date === selectedDate)
-    : transactions.filter(item => item.date.startsWith(String(selectedYear) + "-"));
-  const income = rows.filter(item => item.type === "income").reduce((sum,item) => sum + Number(item.amount || 0),0);
-  const expenses = rows.filter(item => item.type === "expense").reduce((sum,item) => sum + Number(item.amount || 0),0);
+  const [periodStart, periodEnd] = budgetPeriod === "daily"
+    ? PocketLedgerCore.getPeriodRange(selectedDate, "daily")
+    : PocketLedgerCore.getPeriodRange(`${selectedYear}-01-01`, "yearly");
+  const rows = transactions.filter(item =>
+    typeof item.date === "string" && item.date >= periodStart && item.date <= periodEnd
+  );
+  const income = PocketLedgerCore.sumAmounts(rows.filter(item => item.type === "income"));
+  const expenses = PocketLedgerCore.sumAmounts(rows.filter(item => item.type === "expense"));
   const summary = $("budgetPeriodSummary"); summary.replaceChildren();
   const cards = budgetPeriod === "daily"
     ? [["Spent today",money(expenses)],["Income today",money(income)],["Net today",money(income-expenses)],["Transactions",String(rows.length)]]
     : [["Annual spending",money(expenses)],["Annual income",money(income)],["Net savings",money(income-expenses)],["Monthly avg. spending",money(expenses/12)]];
   cards.forEach(([label,value]) => { const card=document.createElement("div");card.className="insight-card";const title=document.createElement("span");title.textContent=label;const amount=document.createElement("strong");if(label==="Transactions")amount.textContent=value;else setSensitiveText(amount,value);card.append(title,amount);summary.append(card); });
-  const totals={}; rows.filter(item=>item.type==="expense").forEach(item=>{const key=item.category||"Other";totals[key]=(totals[key]||0)+Number(item.amount||0);});
+  const totals = PocketLedgerCore.categoryTotals(rows);
   const list=$("budgetPeriodCategories");list.replaceChildren();const sorted=Object.entries(totals).sort((x,y)=>y[1]-x[1]);
   if(!sorted.length){const empty=document.createElement("p");empty.className="empty";empty.textContent=budgetPeriod==="daily"?"No spending recorded for this day.":"No spending recorded for this year.";list.append(empty);}
   const max=Math.max(1,...sorted.map(x=>x[1]));
@@ -541,38 +529,29 @@ async function renderBudgets() {
   $("budgetPeriodView").hidden=budgetPeriod==="monthly";
   $("monthlyBudgetView").hidden=budgetPeriod!=="monthly";
   if(budgetPeriod!=="monthly"){await renderBudgetPeriodSummary();return;}
-  const month = $("budgetMonth").value || currentMonth();
+  const requestedMonth = $("budgetMonth").value || currentMonth();
+  const month = PocketLedgerCore.isValidMonth(requestedMonth) ? requestedMonth : currentMonth();
+  if ($("budgetMonth").value !== month) $("budgetMonth").value = month;
 
   const [transactions, budgets] = await Promise.all([
     all(),
     allBudgets()
   ]);
 
-  const expenses = transactions.filter(item =>
-    item.type === "expense" &&
-    item.date.startsWith(month)
-  );
-
-  const totalSpent = expenses.reduce(
-    (sum, item) => sum + item.amount, 0
-  );
+  const expenses = PocketLedgerCore.expenseRowsForMonth(transactions, month);
+  const totalSpent = PocketLedgerCore.sumAmounts(expenses);
 
   const globalRecord = budgets.find(item =>
     item.id === budgetId(month, "GLOBAL")
   );
 
-  const globalLimit = globalRecord ? globalRecord.amount : 0;
-  const remaining = globalLimit - totalSpent;
+  const globalLimit = globalRecord ? Number(globalRecord.amount) : 0;
+  const daysInMonth = PocketLedgerCore.daysInMonth(month);
+  const metrics = PocketLedgerCore.calculateBudgetMetrics(totalSpent, globalLimit, daysInMonth);
+  const remaining = metrics.remaining;
 
   setSensitiveText($("globalSpent"), money(totalSpent));
-
-  const [year, monthNumber] = month.split("-").map(Number);
-  const daysInMonth = new Date(year, monthNumber, 0).getDate();
-
-  setSensitiveText(
-    $("dailyAverage"),
-    money(totalSpent / daysInMonth)
-  );
+  setSensitiveText($("dailyAverage"), money(metrics.dailyAverage));
 
   setSensitiveText($("budgetRemaining"), money(remaining));
 
@@ -583,16 +562,11 @@ async function renderBudgets() {
       : "Set your monthly budget to track your spending."
   );
 
-  const usedPercent = globalLimit > 0
-    ? totalSpent / globalLimit * 100
-    : 0;
-
-  const remainingPercent = globalLimit > 0
-    ? Math.max(0, 100 - usedPercent)
-    : 0;
+  const usedPercent = metrics.percentUsed;
+  const remainingPercent = metrics.remainingPercent;
 
   $("globalProgress").style.width =
-    `${Math.min(100, usedPercent)}%`;
+    `${metrics.progressPercent}%`;
 
   $("budgetUsedPercent").textContent =
     `${usedPercent.toFixed(1)}% used`;
@@ -600,12 +574,9 @@ async function renderBudgets() {
   $("budgetRemainingPercent").textContent =
     `${remainingPercent.toFixed(1)}% remaining`;
 
-  const globalAlert = globalLimit > 0 && usedPercent >= 75;
+  const globalAlert = metrics.warning;
   $("globalProgress").classList.toggle("budget-warning", globalAlert);
-  $("globalProgress").classList.toggle(
-    "over-budget",
-    globalLimit > 0 && totalSpent > globalLimit
-  );
+  $("globalProgress").classList.toggle("over-budget", metrics.overBudget);
   const globalAlertElement = $("globalBudgetAlert");
   globalAlertElement.textContent = globalAlert
     ? (usedPercent >= 100
@@ -628,6 +599,7 @@ async function renderBudgets() {
     item.month === month && item.category !== "GLOBAL"
   );
 
+  const spentByCategory = PocketLedgerCore.categoryTotals(expenses);
   const container = $("categoryBudgetList");
   container.replaceChildren();
 
@@ -640,9 +612,7 @@ async function renderBudgets() {
   }
 
   for (const budget of categoryRecords) {
-    const spent = expenses
-      .filter(item => item.category === budget.category)
-      .reduce((sum, item) => sum + item.amount, 0);
+    const spent = spentByCategory[budget.category] || 0;
 
     const percent = budget.amount > 0
       ? spent / budget.amount * 100
@@ -1018,7 +988,7 @@ $("globalBudgetForm").onsubmit = async event => {
   const month = $("budgetMonth").value;
   const amount = Number($("globalBudgetAmount").value);
 
-  if (!month || !Number.isSafeInteger(amount) || amount <= 0) {
+  if (!PocketLedgerCore.isValidMonth(month) || !Number.isSafeInteger(amount) || amount <= 0) {
     $("globalBudgetStatus").textContent =
       "Please enter a valid monthly budget.";
     return;
@@ -1053,7 +1023,7 @@ $("categoryBudgetForm").onsubmit = async event => {
   const category = $("budgetCategory").value;
   const amount = Number($("categoryBudgetAmount").value);
 
-  if (!month || !Number.isSafeInteger(amount) || amount <= 0) {
+  if (!PocketLedgerCore.isValidMonth(month) || !Number.isSafeInteger(amount) || amount <= 0) {
     $("categoryBudgetStatus").textContent =
       "Please enter a valid category limit.";
     return;
@@ -1562,9 +1532,10 @@ async function renderGoals() {
   }
   activeGoals.sort((a,b) => (a.targetDate || "9999").localeCompare(b.targetDate || "9999"));
   for (const goal of activeGoals) {
-    const saved = Math.max(0, Number(goal.savedAmount || 0));
-    const target = Math.max(1, Number(goal.targetAmount || 1));
-    const percent = Math.min(100, saved / target * 100);
+    const progress = PocketLedgerCore.calculateGoalProgress(goal.savedAmount, goal.targetAmount);
+    const saved = progress.saved;
+    const target = progress.target;
+    const percent = progress.percent;
     const card = document.createElement("article");
     card.className = "goal-card";
     const top = document.createElement("div");
@@ -1579,7 +1550,9 @@ async function renderGoals() {
     const current = document.createElement("strong");
     setSensitiveText(current,money(saved));
     const targetText = document.createElement("span");
-    targetText.textContent = `of ${money(target)}`;
+    targetText.textContent = progress.isComplete
+      ? `of ${money(target)} · Goal reached`
+      : `of ${money(target)} · ${money(progress.remaining)} to go`;
     amounts.append(current,targetText);
     const track = document.createElement("div");
     track.className = "progress-track goal-progress";
@@ -1602,7 +1575,12 @@ async function renderGoals() {
       if(!Number.isSafeInteger(amount)||amount<=0){showToast("Enter a valid positive amount.","error");return;}
       const latest=(await allSavingsGoals()).find(item=>item.id===goal.id);
       if(!latest)return;
-      latest.savedAmount=Number(latest.savedAmount||0)+amount;
+      const nextSaved = Number(latest.savedAmount || 0) + amount;
+       if (!Number.isSafeInteger(nextSaved)) {
+         showToast("That amount is too large to record safely.", "error");
+         return;
+       }
+       latest.savedAmount = nextSaved;
       latest.updatedAt=new Date().toISOString();
       await operation("savingsGoals","readwrite",store=>store.put(latest));
       await renderGoals(); showToast("Savings progress updated.");
