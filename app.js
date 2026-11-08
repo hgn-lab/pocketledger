@@ -1267,6 +1267,7 @@ $("accountType").addEventListener("change", async () => {
   const isCard = $("accountType").value === "Credit card";
   $("accountClassification").value = liabilityTypes.includes($("accountType").value) ? "liability" : "asset";
   $("creditLimitField").hidden = !isCard;
+  $("creditLimit").disabled = !isCard;
   $("creditDetailsFields").hidden = !isCard;
   $("openingBalanceLabel").textContent = isCard ? "Current outstanding balance (IDR)" : "Opening balance (IDR)";
   $("openingBalanceHint").textContent = isCard
