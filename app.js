@@ -1229,6 +1229,10 @@ $("accountType").addEventListener("change", async () => {
   $("accountClassification").value = liabilityTypes.includes($("accountType").value) ? "liability" : "asset";
   $("creditLimitField").hidden = !isCard;
   $("creditDetailsFields").hidden = !isCard;
+  $("openingBalanceLabel").textContent = isCard ? "Current outstanding balance (IDR)" : "Opening balance (IDR)";
+  $("openingBalanceHint").textContent = isCard
+    ? "Enter only what you currently owe on this card—not its credit limit. Net worth deducts this outstanding balance only."
+    : "Enter the account balance on the opening date.";
   await populatePaymentAccountSelect("paymentAccount");
   $("creditLimit").required = isCard;
   await populatePaymentAccountSelect("paymentAccount");
