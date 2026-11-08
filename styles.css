@@ -1534,3 +1534,13 @@ input[type="date"], input[type="month"] {
   box-shadow: none !important;
 }
 .settings-tabs .period-btn { min-height: 44px; }
+
+
+/* Transaction editing, recurring schedule and monthly closeout additions. */
+.transaction-actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+.recurring-toggle{display:flex;align-items:center;gap:10px}
+.recurring-toggle input{width:18px;height:18px;accent-color:var(--green)}
+.recurring-options{padding:13px;border:1px solid var(--line);border-radius:14px;background:#f7f9f5}
+.recurring-options[hidden],#cancelTransactionEdit[hidden]{display:none!important}
+.monthly-closeout-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.monthly-closeout-grid .insight-card{min-width:0}
