@@ -1517,3 +1517,20 @@ input[type="date"], input[type="month"] {
   box-shadow: none;
 }
 .settings-tabs .period-btn { min-height: 42px; }
+
+
+/* Strong selected-state contrast for Settings' default Accounts section. */
+.settings-tabs .period-btn.active {
+  background: var(--green) !important;
+  color: #ffffff !important;
+  font-weight: 750;
+  box-shadow: 0 3px 9px rgba(32, 62, 50, .2) !important;
+  outline: 2px solid rgba(49, 92, 73, .12);
+  outline-offset: 1px;
+}
+.settings-tabs .period-btn:not(.active) {
+  background: transparent !important;
+  color: #62675f !important;
+  box-shadow: none !important;
+}
+.settings-tabs .period-btn { min-height: 44px; }
