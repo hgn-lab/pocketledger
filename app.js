@@ -126,7 +126,7 @@ const categories = [
 
 function openDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open("PocketLedgerDB", 4);
+    const request = indexedDB.open("PocketLedgerDB", 5);
 
     request.onupgradeneeded = () => {
       const database = request.result;
@@ -414,82 +414,14 @@ async function renderRecentActivity() {
 
 // TRANSACTIONS
 
-async function renderTransactions() {
-  const rows = (await all()).sort((a, b) =>
-    b.date.localeCompare(a.date) || b.id - a.id
-  );
-
-  $("count").textContent = `${rows.length} items`;
-
-  const list = $("list");
-  list.replaceChildren();
-
-  if (!rows.length) {
-    const empty = document.createElement("div");
-    empty.className = "empty";
-    empty.textContent = "No transactions yet.";
-    list.append(empty);
-    return;
-  }
-
-  for (const item of rows) {
-    const row = document.createElement("div");
-    row.className = "transaction";
-
-    const icon = document.createElement("div");
-    icon.className = "transaction-category-icon";
-    icon.innerHTML = categoryIcon(item.category);
-    icon.setAttribute("aria-hidden", "true");
-
-    const info = document.createElement("div");
-    info.className = "transaction-info";
-
-    const title = document.createElement("div");
-    title.className = "description";
-    title.textContent = item.description;
-
-    const meta = document.createElement("div");
-    meta.className = "meta";
-    meta.textContent = `${item.category} · ${item.date} · ${item.accountId ? "Account linked" : "Unassigned"}`;
-
-    info.append(title, meta);
-
-    const right = document.createElement("div");
-    right.className = "right";
-
-    const amount = document.createElement("div");
-    amount.className =
-      "amount " +
-      (item.type === "income" ? "positive" : "negative");
-
-    setSensitiveText(
-      amount,
-      (item.type === "income" ? "+" : "−") + money(item.amount)
-    );
-
-    const button = document.createElement("button");
-    button.className = "delete";
-    button.textContent = "Delete";
-
-    button.onclick = async () => {
-      if (confirm("Delete this transaction?")) {
-        await atomicWrite(["transactions", "journalEntries"], tx => {
-          tx.objectStore("transactions").delete(item.id);
-          const entries = tx.objectStore("journalEntries");
-          entries.getAll().onsuccess = event => {
-            event.target.result
-              .filter(entry => entry.transactionId === item.id)
-              .forEach(entry => entries.delete(entry.id));
-          };
-        });
-        await refreshAll();
-      }
-    };
-
-    right.append(amount, button);
-    row.append(icon, info, right);
-    list.append(row);
-  }
+async function renderTransactions(){
+ const rows=(await all()).sort((a,b)=>b.date.localeCompare(a.date)||String(b.id).localeCompare(String(a.id)));$("count").textContent=`${rows.length} items`;const list=$("list");list.replaceChildren();
+ if(!rows.length){const empty=document.createElement("div");empty.className="empty";empty.textContent="No transactions yet.";list.append(empty);return;}
+ for(const item of rows){const row=document.createElement("div");row.className="transaction";const icon=document.createElement("div");icon.className="transaction-category-icon";icon.innerHTML=categoryIcon(item.category);icon.setAttribute("aria-hidden","true");const info=document.createElement("div");info.className="transaction-info";const title=document.createElement("div");title.className="description";title.textContent=item.description;const meta=document.createElement("div");meta.className="meta";meta.textContent=`${item.category||"Other"} · ${item.date} · ${item.accountId?"Account linked":"Unassigned"}${item.recurringRule?" · Recurring":item.recurringSourceId?" · Recurring entry":""}`;info.append(title,meta);
+ const right=document.createElement("div");right.className="right";const amount=document.createElement("div");amount.className="amount "+(item.type==="income"?"positive":"negative");setSensitiveText(amount,(item.type==="income"?"+":"−")+money(item.amount));const actions=document.createElement("div");actions.className="transaction-actions";
+ const edit=document.createElement("button");edit.className="delete";edit.textContent="Edit";edit.onclick=async()=>{await populateTransactionAccountSelect();$("description").value=item.description;$("amount").value=String(item.amount);$("date").value=item.date;$("category").value=item.category||"Other";$("transactionAccount").value=item.accountId||"";const radio=document.querySelector(`input[name="type"][value="${item.type}"]`);if(radio)radio.checked=true;$("categoryIconPreview").innerHTML=categoryIcon(item.category);$("editingTransactionId").value=String(item.id);$("recurringEnabled").checked=!!item.recurringRule;$("recurringFrequency").value=item.recurringRule?.frequency||"monthly";$("recurringOptions").hidden=!item.recurringRule;$("formSubmitLabel").textContent="Save changes";$("cancelTransactionEdit").hidden=false;$("transactionFormHeading").textContent="Edit transaction";$("status").textContent="Editing an existing transaction. Save changes when finished.";$("form").scrollIntoView({behavior:"smooth",block:"start"});};
+ const del=document.createElement("button");del.className="delete";del.textContent="Delete";del.onclick=async()=>{if(!confirm("Delete this transaction? Its linked ledger entries will also be removed."))return;await atomicWrite(["transactions","journalEntries"],tx=>{tx.objectStore("transactions").delete(item.id);const entries=tx.objectStore("journalEntries");entries.getAll().onsuccess=event=>event.target.result.filter(entry=>entry.transactionId===item.id).forEach(entry=>entries.delete(entry.id));});await refreshAll();};
+ actions.append(edit,del);right.append(amount,actions);row.append(icon,info,right);list.append(row);}
 }
 
 // BUDGET CALCULATIONS
@@ -782,6 +714,8 @@ async function renderAnalytics() {
     categoryContainer.append(row);
   }
 
+  const closeout=$("monthlyCloseout");
+  if(closeout){closeout.replaceChildren();const [accounts,entries]=await Promise.all([allAccounts(),allJournalEntries()]);const netWorth=accounts.reduce((sum,a)=>{const movement=entries.filter(e=>e.accountId===a.id).reduce((v,e)=>v+Number(e.balanceDelta||0),0),balance=Number(a.openingBalance||0)+movement;return sum+(a.classification==="liability"?-balance:balance);},0);[["Transactions",String(monthRows.length)],["Net cash flow",money(savings)],["Savings rate",savingsRate],["Current net worth",money(netWorth)]].forEach(([label,value])=>{const card=document.createElement("div");card.className="insight-card comparison-card";const name=document.createElement("span");name.textContent=label;const amount=document.createElement("strong");if(label==="Transactions")amount.textContent=value;else setSensitiveText(amount,value);card.append(name,amount);closeout.append(card);});}
   // Previous-month comparison. Missing prior data is shown explicitly.
   const [selectedYear, selectedMonthNumber] = selectedMonth.split("-").map(Number);
   const previousDate = new Date(selectedYear, selectedMonthNumber - 2, 1);
@@ -1401,6 +1335,9 @@ $("transferForm").onsubmit = async event => {
     const from=accounts.find(a=>a.id===fromId), to=accounts.find(a=>a.id===toId);
     if (!from || !to || from.active===false || to.active===false) throw new Error("Choose active accounts.");
     if (from.classification!=="asset") throw new Error("Transfers must start from an asset account. Use an asset account to pay a liability.");
+    if(!PocketLedgerCore.isValidDate(date)||!Number.isSafeInteger(amount)||amount<=0)throw Error("Enter a valid transfer date and positive whole-IDR amount.");
+    const oldTransfers=await allTransfers(),duplicate=oldTransfers.some(x=>x.fromAccountId===fromId&&x.toAccountId===toId&&x.amount===amount&&x.date===date&&String(x.description||"")===description);
+    if(duplicate&&!confirm("An identical transfer already exists. Save another one anyway?"))return;
     const transfer={id:makeId("transfer"), fromAccountId:fromId,toAccountId:toId,amount,date,description,createdAt:new Date().toISOString()};
     const groupId=makeId("journal");
     const entries=[ledgerEntry(from,amount,"decrease",date,{groupId,transferId:transfer.id,kind:"transfer"}),
@@ -1422,77 +1359,23 @@ $("category").addEventListener("change", () => {
   $("categoryIconPreview").innerHTML = categoryIcon($("category").value);
 });
 
-$("form").onsubmit = async event => {
-  event.preventDefault();
-
-  const description = $("description").value.trim();
-  const amount = Number($("amount").value);
-  const date = $("date").value;
-
-  const type = document.querySelector(
-    'input[name="type"]:checked'
-  ).value;
-
-  if (
-    !description ||
-    !Number.isSafeInteger(amount) ||
-    amount <= 0 ||
-    !/^\d{4}-\d{2}-\d{2}$/.test(date)
-  ) {
-    $("status").textContent =
-      "Enter a valid description, amount and date.";
-    return;
-  }
-
-  try {
-    const accountId = $("transactionAccount").value || null;
-    const transaction = {
-      description, amount, date, type, accountId,
-      category: $("category").value,
-      createdAt: new Date().toISOString()
-    };
-    if (accountId) {
-      const account = (await allAccounts()).find(item => item.id === accountId && item.active !== false);
-      if (!account) throw new Error("Choose an active account.");
-      if (type === "income" && account.classification !== "asset") throw new Error("Income must be received into an asset account.");
-      if (type === "expense" && account.classification === "liability" && account.type !== "Credit card") throw new Error("Only credit card accounts can be selected for an expense.");
-      await atomicWrite(["transactions", "journalEntries"], tx => {
-        const request = tx.objectStore("transactions").add(transaction);
-        request.onsuccess = () => {
-          const direction = type === "income" ? "increase" : "decrease";
-          const groupId = makeId("journal");
-          const entry = ledgerEntry(account, amount, direction, date,
-            { groupId, transactionId: request.result, kind: type, category: transaction.category, description });
-          const counterpart = {
-            id:makeId("je"), groupId, accountId:null,
-            systemAccount:type === "income" ? `Income:${transaction.category}` : `Expense:${transaction.category}`,
-            side:type === "income" ? "credit" : "debit", amount, balanceDelta:0, date,
-            transactionId:request.result, kind:type, category:transaction.category,
-            description, createdAt:new Date().toISOString()
-          };
-          tx.objectStore("journalEntries").add(entry);
-          tx.objectStore("journalEntries").add(counterpart);
-        };
-      });
-    } else {
-      await add(transaction);
-    }
-
-    $("form").reset();
-    $("date").value = localDate();
-
-    $("status").textContent =
-      "Transaction saved on this device.";
-    showToast("Transaction saved on this device.");
-
-    await refreshAll();
-  } catch (error) {
-    $("status").textContent =
-      "Could not save transaction.";
-    console.error(error);
-  }
-};
-
+function validLedgerDate(value){return PocketLedgerCore.isValidDate(value);}
+function makeTransactionLedgerRows(t,account,id){if(!account)return[];const direction=t.type==="income"?"increase":"decrease",groupId=makeId("journal");const entry=ledgerEntry(account,t.amount,direction,t.date,{groupId,transactionId:id,kind:t.type,category:t.category,description:t.description});const counterpart={id:makeId("je"),groupId,accountId:null,systemAccount:t.type==="income"?`Income:${t.category}`:`Expense:${t.category}`,side:t.type==="income"?"credit":"debit",amount:t.amount,balanceDelta:0,date:t.date,transactionId:id,kind:t.type,category:t.category,description:t.description,createdAt:new Date().toISOString()};return[entry,counterpart];}
+function nextRecurringDate(value,frequency){const[y,m,d]=value.split("-").map(Number),date=new Date(y,m-1,d);if(frequency==="weekly")date.setDate(date.getDate()+7);else if(frequency==="yearly")date.setFullYear(date.getFullYear()+1);else{const target=date.getMonth()+1,last=new Date(date.getFullYear(),target+1,0).getDate();date.setDate(1);date.setMonth(target);date.setDate(Math.min(d,last));}return`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;}
+async function populateTransactionAccountSelect(){const select=$("transactionAccount"),previous=select.value,accounts=(await allAccounts()).filter(a=>a.active!==false);select.replaceChildren(new Option("Unassigned — excluded from account balances",""));accounts.forEach(a=>select.add(new Option(a.name,a.id)));if(accounts.some(a=>a.id===previous))select.value=previous;}
+function resetTransactionEditor(){$("form").reset();$("date").value=localDate();$("editingTransactionId").value="";$("recurringOptions").hidden=true;$("recurringEnabled").checked=false;$("formSubmitLabel").textContent="Add transaction";$("cancelTransactionEdit").hidden=true;$("transactionFormHeading").textContent="New transaction";$("categoryIconPreview").innerHTML=categoryIcon($("category").value);}
+$("recurringEnabled").addEventListener("change",()=>{$("recurringOptions").hidden=!$("recurringEnabled").checked;});$("cancelTransactionEdit").addEventListener("click",()=>{resetTransactionEditor();$("status").textContent="Edit cancelled.";});$("category").addEventListener("change",()=>{$("categoryIconPreview").innerHTML=categoryIcon($("category").value);});
+$("form").onsubmit=async event=>{event.preventDefault();const description=$("description").value.trim(),amount=Number($("amount").value),date=$("date").value,type=document.querySelector('input[name="type"]:checked')?.value,editingId=$("editingTransactionId").value;
+ if(!description||description.length>80||!Number.isSafeInteger(amount)||amount<=0||!validLedgerDate(date)||!["income","expense"].includes(type)){$("status").textContent="Enter a description, a positive whole-IDR amount, and a valid date.";return;}
+ try{const accountId=$("transactionAccount").value||null,accounts=await allAccounts(),account=accountId?accounts.find(a=>a.id===accountId&&a.active!==false):null;if(accountId&&!account)throw Error("Choose an active account.");if(account&&type==="income"&&account.classification!=="asset")throw Error("Income must be received into an asset account.");if(account&&type==="expense"&&account.classification==="liability"&&account.type!=="Credit card")throw Error("Only credit card accounts can be selected for an expense.");
+ const existing=editingId?(await all()).find(x=>String(x.id)===editingId):null;if(editingId&&!existing)throw Error("This transaction no longer exists. Refresh and try again.");if(existing?.recurringSourceId)throw Error("Edit the original recurring transaction to change its schedule.");
+ const t={...(existing||{}),description,amount,date,type,accountId,category:$("category").value||"Other",createdAt:existing?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
+ if($("recurringEnabled").checked){const frequency=$("recurringFrequency").value;if(!["weekly","monthly","yearly"].includes(frequency))throw Error("Choose a valid recurring frequency.");t.recurringRule={frequency,nextDate:existing?.recurringRule?.frequency===frequency?existing.recurringRule.nextDate:nextRecurringDate(date,frequency),active:true};}else if(existing?.recurringRule)t.recurringRule={...existing.recurringRule,active:false};
+ const prior=await all(),duplicates=prior.filter(x=>String(x.id)!==editingId&&x.date===date&&x.type===type&&x.amount===amount&&x.description.toLowerCase()===description.toLowerCase()&&(x.accountId||null)===accountId);if(duplicates.length&&!confirm("A very similar transaction already exists on this date. Save another one anyway?"))return;
+ if(existing){await atomicWrite(["transactions","journalEntries"],tx=>{tx.objectStore("transactions").put(t);const entries=tx.objectStore("journalEntries");entries.getAll().onsuccess=e=>{e.target.result.filter(x=>x.transactionId===existing.id).forEach(x=>entries.delete(x.id));makeTransactionLedgerRows(t,account,existing.id).forEach(x=>entries.put(x));};});showToast("Transaction updated.");}
+ else{await atomicWrite(["transactions","journalEntries"],tx=>{const req=tx.objectStore("transactions").add(t);req.onsuccess=()=>makeTransactionLedgerRows(t,account,req.result).forEach(x=>tx.objectStore("journalEntries").add(x));});showToast("Transaction saved on this device.");}
+ resetTransactionEditor();$("status").textContent="Transaction saved on this device.";await refreshAll();
+ }catch(error){console.error(error);$("status").textContent=error.message||"Could not save transaction.";showToast(error.message||"Could not save transaction.","error");}};
 // iOS Safari: dismiss the keyboard after a form is submitted.
 document.addEventListener("submit", event => {
   const active = document.activeElement;
@@ -1726,11 +1609,7 @@ async function deriveBackupKey(password, salt) {
     material, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]
   );
 }
-async function collectBackupData() {
-  const data = {};
-  for (const storeName of BACKUP_STORES) data[storeName] = await operation(storeName, "readonly", store => store.getAll());
-  return data;
-}
+async function collectBackupData(){return new Promise((resolve,reject)=>{const tx=db.transaction(BACKUP_STORES,"readonly"),data={};let pending=BACKUP_STORES.length;for(const name of BACKUP_STORES){const req=tx.objectStore(name).getAll();req.onsuccess=()=>{data[name]=req.result;pending--;};req.onerror=()=>reject(req.error||Error("Could not read backup data."));}tx.oncomplete=()=>pending===0?resolve(data):reject(Error("Backup snapshot was incomplete."));tx.onerror=()=>reject(tx.error||Error("Backup snapshot failed."));tx.onabort=()=>reject(tx.error||Error("Backup snapshot was cancelled."));});}
 function downloadBackup(blob, filename) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -1791,13 +1670,15 @@ $("backupFile").addEventListener("change", async event => {
         !payload.data || !BACKUP_STORES.every(name => Array.isArray(payload.data[name]))) {
       throw new Error("Backup contents are incomplete or unsupported.");
     }
-    for (const name of BACKUP_STORES) {
-      for (const record of payload.data[name]) {
-        if (!record || typeof record !== "object" || Array.isArray(record) || !("id" in record)) {
-          throw new Error("Backup contains an invalid record. No data was changed.");
-        }
-      }
-    }
+    const seen=new Map();
+    for(const name of BACKUP_STORES){seen.set(name,new Set());for(const record of payload.data[name]){
+      if(!record||typeof record!=="object"||Array.isArray(record)||!("id" in record)||!["string","number"].includes(typeof record.id)||String(record.id).length===0)throw Error(`Backup contains an invalid ${name} record. No data was changed.`);
+      if(seen.get(name).has(String(record.id)))throw Error(`Backup contains duplicate IDs in ${name}. No data was changed.`);seen.get(name).add(String(record.id));
+      if(name==="transactions"&&(!["income","expense"].includes(record.type)||!Number.isSafeInteger(record.amount)||record.amount<=0||!PocketLedgerCore.isValidDate(record.date)||typeof record.description!=="string"))throw Error("Backup contains an invalid transaction. No data was changed.");
+      if(name==="journalEntries"&&(!Number.isSafeInteger(record.amount)||record.amount<0||!PocketLedgerCore.isValidDate(record.date)))throw Error("Backup contains an invalid ledger entry. No data was changed.");
+      if(name==="transfers"&&(!Number.isSafeInteger(record.amount)||record.amount<=0||record.fromAccountId===record.toAccountId||!PocketLedgerCore.isValidDate(record.date)))throw Error("Backup contains an invalid transfer. No data was changed.");
+      if(name==="accounts"&&(typeof record.name!=="string"||!["asset","liability"].includes(record.classification)||!Number.isSafeInteger(Number(record.openingBalance))))throw Error("Backup contains an invalid account. No data was changed.");
+    }}
     const counts = BACKUP_STORES.map(name => `${name}: ${payload.data[name].length}`).join("\n");
     if (!confirm("Restore this backup?\n\nThis replaces the records currently stored in this browser with the records in the backup. Export a backup of current data first if you may need it.\n\n" + counts)) return;
     await atomicWrite(BACKUP_STORES, tx => {
@@ -1890,11 +1771,13 @@ $("export").onclick = async () => {
   showToast("CSV export is ready.");
 };
 
+async function processDueRecurringTransactions(){const today=localDate(),transactions=await all(),accounts=await allAccounts(),sources=transactions.filter(x=>x.recurringRule?.active&&x.recurringRule?.nextDate&&!x.recurringSourceId);for(const source of sources){let nextDate=source.recurringRule.nextDate,generated=0;while(nextDate<=today&&generated<120){if(!transactions.some(x=>x.recurringSourceId===source.id&&x.date===nextDate)){const account=source.accountId?accounts.find(a=>a.id===source.accountId&&a.active!==false):null;if(source.accountId&&!account)break;const occurrence={...source,date:nextDate,recurringSourceId:source.id,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};delete occurrence.id;delete occurrence.recurringRule;await atomicWrite(["transactions","journalEntries"],tx=>{const req=tx.objectStore("transactions").add(occurrence);req.onsuccess=()=>makeTransactionLedgerRows(occurrence,account,req.result).forEach(x=>tx.objectStore("journalEntries").add(x));});}nextDate=nextRecurringDate(nextDate,source.recurringRule.frequency);generated++;}if(nextDate!==source.recurringRule.nextDate){source.recurringRule={...source.recurringRule,nextDate};await operation("transactions","readwrite",s=>s.put(source));}}}
 // START APPLICATION
 
 (async () => {
   try {
     db = await openDB();
+    await processDueRecurringTransactions();
 
     $("date").value = localDate();
     $("openingDate").value = localDate();
