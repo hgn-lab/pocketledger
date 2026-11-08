@@ -1818,6 +1818,38 @@ $("backupFile").addEventListener("change", async event => {
   } finally { event.target.value = ""; }
 });
 
+// EXPLICIT LOCAL DATA RESET
+// Clears only PocketLedger's six financial stores in this browser.
+// It preserves the database schema, app files, privacy preference and external backup files.
+$("resetTestData").addEventListener("click", async () => {
+  const status = $("resetDataStatus");
+  const counts = {};
+  try {
+    for (const name of BACKUP_STORES) {
+      counts[name] = await operation(name, "readonly", store => store.count());
+    }
+    const summary = BACKUP_STORES.map(name => `${name}: ${counts[name]}`).join("\n");
+    if (!window.confirm(
+      "Reset all PocketLedger data in this browser? This cannot be undone.\n\n" +
+      "Your encrypted backup files in Files/iCloud Drive will not be deleted.\n\n" + summary
+    )) return;
+    const confirmation = window.prompt('To confirm, type RESET. This permanently clears the six PocketLedger data stores.');
+    if (confirmation !== "RESET") {
+      status.textContent = "Reset cancelled. No data was changed.";
+      return;
+    }
+    await atomicWrite(BACKUP_STORES, tx => {
+      for (const name of BACKUP_STORES) tx.objectStore(name).clear();
+    });
+    await refreshAll();
+    status.textContent = "PocketLedger data cleared in this browser. Your backup files and app settings were preserved.";
+    showToast("PocketLedger test data cleared.");
+  } catch (error) {
+    console.error(error);
+    status.textContent = "Reset failed. Please reload and try again; existing records may remain.";
+  }
+});
+
 // EXPORT ALL TRANSACTIONS
 
 $("export").onclick = async () => {
