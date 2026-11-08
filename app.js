@@ -379,7 +379,8 @@ async function render() {
 }
 
 async function renderDashboardSnapshot() {
-  const accounts = (await accountBalances()).filter(account => account.active !== false);
+  // Archived accounts remain part of net worth; archiving only hides them from daily management.
+  const accounts = await accountBalances();
   const assets = accounts.filter(account => account.classification === "asset")
     .reduce((sum, account) => sum + Number(account.balance || 0), 0);
   const liabilities = accounts.filter(account => account.classification === "liability")
@@ -893,8 +894,6 @@ async function renderAnalytics() {
     for (const account of accounts) {
       const openingDate = account.openingBalanceDate || (account.createdAt || "").slice(0, 10);
       if (!openingDate || openingDate > cutoff) continue;
-      const archivedDate = account.archivedAt ? account.archivedAt.slice(0, 10) : null;
-      if (archivedDate && archivedDate <= cutoff) continue;
       const movement = journalEntries
         .filter(entry => entry.accountId === account.id && entry.date >= openingDate && entry.date <= cutoff)
         .reduce((sum, entry) => sum + Number(entry.balanceDelta || 0), 0);
@@ -1117,13 +1116,14 @@ async function renderAccountSelectors() {
 async function renderAccounts() {
   const accounts = await accountBalances();
   const active = accounts.filter(a => a.active !== false);
+  // Account summaries include archived balances so archiving cannot alter net worth.
+  const allAssets = accounts.filter(a => a.classification === "asset");
+  const allLiabilities = accounts.filter(a => a.classification === "liability");
   const cards = active.filter(a => a.type === "Credit card");
   const otherAssets = active.filter(a => a.type !== "Credit card" && a.classification === "asset");
   const otherLiabilities = active.filter(a => a.type !== "Credit card" && a.classification === "liability");
-  const assets = active.filter(a => a.classification === "asset");
-  const liabilities = active.filter(a => a.classification === "liability");
-  const totalAssets = assets.reduce((s,a) => s + a.balance, 0);
-  const totalLiabilities = liabilities.reduce((s,a) => s + a.balance, 0);
+  const totalAssets = allAssets.reduce((s,a) => s + a.balance, 0);
+  const totalLiabilities = allLiabilities.reduce((s,a) => s + a.balance, 0);
   setSensitiveText($("totalAssets"), money(totalAssets));
   setSensitiveText($("totalLiabilities"), money(totalLiabilities));
   setSensitiveText($("netWorth"), money(totalAssets-totalLiabilities));
