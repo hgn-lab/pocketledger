@@ -1616,9 +1616,20 @@ async function renderGoals() {
       const row=document.createElement("div"); row.className="goal-debt-row";
       const info=document.createElement("div");
       const name=document.createElement("strong"); name.textContent=account.name;
-      const type=document.createElement("small"); type.textContent=account.type;
+      const type=document.createElement("small");
+       if (account.type === "Credit card") {
+         const details = [];
+         const limit = Number(account.creditLimit || 0);
+         const outstanding = Math.max(0, Number(account.balance || 0));
+         if (limit > 0) details.push(`${Math.min(100, outstanding / limit * 100).toFixed(0)}% of limit`);
+         if (Number(account.dueDay) > 0) details.push(`Due day ${account.dueDay}`);
+         if (Number(account.minimumPayment) > 0) details.push(`Minimum ${money(account.minimumPayment)}`);
+         type.textContent = details.length ? `Credit card · ${details.join(" · ")}` : "Credit card";
+       } else {
+         type.textContent = account.type;
+       }
       info.append(name,type);
-      const amount=document.createElement("strong"); setSensitiveText(amount,money(account.balance));
+      const amount=document.createElement("strong"); setSensitiveText(amount,money(Math.max(0, Number(account.balance || 0))));
       row.append(info,amount); debtList.append(row);
     });
   }
