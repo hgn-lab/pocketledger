@@ -41,7 +41,7 @@ jobs:
             ['liabilities have their own list', html.includes('id="liabilityList"')],
             ['secure backup follows CSV export', html.indexOf('backup-section') > html.indexOf('id="export"')],
             ['service worker does not cache auth module', !sw.includes('"./auth.js"')],
-            ['service worker cache version refreshed', sw.includes('pocketledger-v39')]
+            ['service worker cache version refreshed', sw.includes('pocketledger-v40')]
           ];
           for (const [label, ok] of checks) console.log((ok ? 'PASS: ' : 'FAIL: ') + label);
           if (checks.some(([, ok]) => !ok)) process.exit(1);
