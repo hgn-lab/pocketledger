@@ -357,6 +357,13 @@
     
 
     
+    <button class="nav-btn" data-screen="goalsScreen" aria-label="Goals">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="9"/>
+      </svg>
+      <span>Goals</span>
+    </button>
+
     <button class="nav-btn" data-screen="settingsScreen" aria-label="Settings">
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.6a8 8 0 0 1-1.7 1l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.7-1l-1.7.6-1.4-2.4 1.4-1.1a8 8 0 0 1 0-2l-1.4-1.1 1.4-2.4 1.7.6a8 8 0 0 1 1.7-1l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.7 1l1.7-.6 1.4 2.4-1.4 1.1a8 8 0 0 1 0 2Z"/>
@@ -366,6 +373,32 @@
 
 
   </nav>
+
+  <!-- SAVINGS GOALS AND DEBT SCREEN -->
+  <section id="goalsScreen" class="screen goals-screen">
+    <div class="section-heading"><h2>Goals & debt</h2><small>Build savings · Manage liabilities</small></div>
+    <section class="section">
+      <div class="section-heading"><h3>Savings goals</h3><small id="goalSummary">0 active goals</small></div>
+      <div id="savingsGoalList" class="goal-list"></div>
+    </section>
+    <section class="section">
+      <h3>Create a savings goal</h3>
+      <form id="savingsGoalForm">
+        <label>Goal name<input id="goalName" maxlength="60" placeholder="Emergency fund" required></label>
+        <label>Target amount (IDR)<input id="goalTarget" type="number" inputmode="numeric" min="1" step="1" data-sensitive-input placeholder="30000000" required></label>
+        <label>Already saved (IDR)<input id="goalSaved" type="number" inputmode="numeric" min="0" step="1" data-sensitive-input value="0" required></label>
+        <label>Target date<input id="goalDate" type="date"></label>
+        <button class="primary" type="submit">Create savings goal</button>
+        <p id="goalStatus" role="status"></p>
+      </form>
+    </section>
+    <section class="section">
+      <div class="section-heading"><h3>Debt overview</h3><small>Outstanding balances</small></div>
+      <div id="debtOverview" class="goal-list"></div>
+      <p class="analytics-footnote">Debt balances come from your liability accounts. Credit limits are not counted as debt. Record repayments through Settings → Transfer between accounts, selecting the liability account as the destination.</p>
+      <button class="secondary" type="button" data-go-screen="settingsScreen">Manage accounts & repayments</button>
+    </section>
+  </section>
 
   <!-- SETTINGS SCREEN -->
   <section id="settingsScreen" class="screen settings-screen">
