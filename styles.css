@@ -1462,3 +1462,14 @@ input[type="date"], input[type="month"] {
 .goal-debt-row { padding:12px 2px; border-bottom:1px solid var(--line); }
 .goal-debt-row > div { display:grid; gap:4px; }
 .goal-debt-row > strong { color:#b4473d; font-size:13px; }
+
+
+/* Budget workspace: Daily / Monthly / Yearly with integrated goals and debt. */
+.budget-period-tabs{position:sticky;top:0;z-index:5;background:#e9ebe6}
+#budgetsScreen [hidden]{display:none!important}
+#budgetsScreen .goals-screen{margin-top:28px;padding-top:4px}
+.goal-create-details{margin-top:14px;padding:15px;border:1px solid var(--line);border-radius:16px;background:#fff}
+.goal-create-details>summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;color:var(--green);font-weight:700;list-style:none}
+.goal-create-details>summary::-webkit-details-marker{display:none}
+.goal-create-details>summary span{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#edf3ec}
+.goal-create-details form{display:grid;gap:12px;margin-top:16px}
