@@ -1502,3 +1502,18 @@ input[type="date"], input[type="month"] {
   line-height: 1.45;
 }
 .budget-setup-hint strong { color: var(--green); }
+
+
+/* Make the default Accounts section unmistakably selected in Settings. */
+.settings-tabs .period-btn.active {
+  background: #ffffff !important;
+  color: var(--green) !important;
+  box-shadow: 0 2px 7px rgba(32, 62, 50, .13) !important;
+  outline: 1px solid rgba(49, 92, 73, .08);
+}
+.settings-tabs .period-btn:not(.active) {
+  background: transparent;
+  color: #62675f;
+  box-shadow: none;
+}
+.settings-tabs .period-btn { min-height: 42px; }
