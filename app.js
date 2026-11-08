@@ -125,7 +125,7 @@ const categories = [
 
 function openDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open("PocketLedgerDB", 3);
+    const request = indexedDB.open("PocketLedgerDB", 4);
 
     request.onupgradeneeded = () => {
       const database = request.result;
@@ -155,6 +155,10 @@ function openDB() {
       if (!database.objectStoreNames.contains("transfers")) {
         const transfers = database.createObjectStore("transfers", { keyPath: "id" });
         transfers.createIndex("byDate", "date", { unique: false });
+      }
+      if (!database.objectStoreNames.contains("savingsGoals")) {
+        const goals = database.createObjectStore("savingsGoals", { keyPath: "id" });
+        goals.createIndex("byCreatedAt", "createdAt", { unique: false });
       }
     };
 
@@ -207,6 +211,7 @@ function atomicWrite(storeNames, writer) {
 const allAccounts = () => operation("accounts", "readonly", s => s.getAll());
 const allJournalEntries = () => operation("journalEntries", "readonly", s => s.getAll());
 const allTransfers = () => operation("transfers", "readonly", s => s.getAll());
+const allSavingsGoals = () => operation("savingsGoals", "readonly", s => s.getAll());
 const makeId = prefix => `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
 async function accountBalances() {
@@ -305,6 +310,9 @@ function showScreen(screenId) {
   }
   if (screenId === "settingsScreen") {
     renderAccounts().catch(console.error);
+  }
+  if (screenId === "goalsScreen") {
+    renderGoals().catch(console.error);
   }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -1502,12 +1510,131 @@ document.querySelectorAll("[data-settings-tab]").forEach(button => {
   });
 });
 
+// SAVINGS GOALS AND DEBT
+async function renderGoals() {
+  const [goals, accounts] = await Promise.all([allSavingsGoals(), accountBalances()]);
+  const activeGoals = goals.filter(goal => goal.archived !== true);
+  $("goalSummary").textContent = `${activeGoals.length} active ${activeGoals.length === 1 ? "goal" : "goals"}`;
+  const goalList = $("savingsGoalList");
+  goalList.replaceChildren();
+  if (!activeGoals.length) {
+    const empty = document.createElement("p");
+    empty.className = "empty";
+    empty.textContent = "Your savings goals will appear here. Start with an emergency fund or a future purchase.";
+    goalList.append(empty);
+  }
+  activeGoals.sort((a,b) => (a.targetDate || "9999").localeCompare(b.targetDate || "9999"));
+  for (const goal of activeGoals) {
+    const saved = Math.max(0, Number(goal.savedAmount || 0));
+    const target = Math.max(1, Number(goal.targetAmount || 1));
+    const percent = Math.min(100, saved / target * 100);
+    const card = document.createElement("article");
+    card.className = "goal-card";
+    const top = document.createElement("div");
+    top.className = "goal-card-top";
+    const name = document.createElement("strong");
+    name.textContent = goal.name;
+    const pct = document.createElement("span");
+    pct.textContent = `${percent.toFixed(0)}%`;
+    top.append(name,pct);
+    const amounts = document.createElement("div");
+    amounts.className = "goal-amounts";
+    const current = document.createElement("strong");
+    setSensitiveText(current,money(saved));
+    const targetText = document.createElement("span");
+    targetText.textContent = `of ${money(target)}`;
+    amounts.append(current,targetText);
+    const track = document.createElement("div");
+    track.className = "progress-track goal-progress";
+    const fill = document.createElement("div");
+    fill.className = "progress-fill";
+    fill.style.width = `${percent}%`;
+    track.append(fill);
+    const footer = document.createElement("div");
+    footer.className = "goal-card-footer";
+    const due = document.createElement("small");
+    due.textContent = goal.targetDate ? `Target · ${new Date(goal.targetDate+"T00:00:00").toLocaleDateString("en-ID",{day:"numeric",month:"short",year:"numeric"})}` : "No target date";
+    const actions = document.createElement("div");
+    actions.className = "goal-actions";
+    const add = document.createElement("button");
+    add.type = "button"; add.className = "secondary"; add.textContent = "Add savings";
+    add.addEventListener("click",async()=>{
+      const raw=window.prompt(`How much are you adding to ${goal.name}? (IDR)`);
+      if(raw===null)return;
+      const amount=Number(raw.trim());
+      if(!Number.isSafeInteger(amount)||amount<=0){showToast("Enter a valid positive amount.","error");return;}
+      const latest=(await allSavingsGoals()).find(item=>item.id===goal.id);
+      if(!latest)return;
+      latest.savedAmount=Number(latest.savedAmount||0)+amount;
+      latest.updatedAt=new Date().toISOString();
+      await operation("savingsGoals","readwrite",store=>store.put(latest));
+      await renderGoals(); showToast("Savings progress updated.");
+    });
+    const edit = document.createElement("button");
+    edit.type="button"; edit.className="secondary"; edit.textContent="Archive";
+    edit.addEventListener("click",async()=>{
+      if(!window.confirm(`Archive the goal “${goal.name}”? Its history will be retained.`))return;
+      const latest=(await allSavingsGoals()).find(item=>item.id===goal.id);
+      if(!latest)return;
+      latest.archived=true; latest.archivedAt=new Date().toISOString();
+      await operation("savingsGoals","readwrite",store=>store.put(latest));
+      await renderGoals(); showToast("Savings goal archived.");
+    });
+    actions.append(add,edit); footer.append(due,actions);
+    card.append(top,amounts,track,footer); goalList.append(card);
+  }
+
+  const debtList=$("debtOverview");
+  debtList.replaceChildren();
+  const debts=accounts.filter(account=>account.active!==false&&account.classification==="liability");
+  if(!debts.length){
+    const empty=document.createElement("p"); empty.className="empty";
+    empty.textContent="No active debts recorded. Add a credit card, loan or other liability in Settings to track it here.";
+    debtList.append(empty);
+  } else {
+    const total=debts.reduce((sum,account)=>sum+Math.max(0,Number(account.balance||0)),0);
+    const totalCard=document.createElement("div"); totalCard.className="goal-debt-total";
+    const label=document.createElement("span"); label.textContent="Total outstanding debt";
+    const value=document.createElement("strong"); setSensitiveText(value,money(total));
+    totalCard.append(label,value); debtList.append(totalCard);
+    debts.forEach(account=>{
+      const row=document.createElement("div"); row.className="goal-debt-row";
+      const info=document.createElement("div");
+      const name=document.createElement("strong"); name.textContent=account.name;
+      const type=document.createElement("small"); type.textContent=account.type;
+      info.append(name,type);
+      const amount=document.createElement("strong"); setSensitiveText(amount,money(account.balance));
+      row.append(info,amount); debtList.append(row);
+    });
+  }
+}
+
+$("savingsGoalForm").onsubmit=async event=>{
+  event.preventDefault();
+  const name=$("goalName").value.trim();
+  const targetAmount=Number($("goalTarget").value);
+  const savedAmount=Number($("goalSaved").value||0);
+  const targetDate=$("goalDate").value||null;
+  if(!name||!Number.isSafeInteger(targetAmount)||targetAmount<=0||!Number.isSafeInteger(savedAmount)||savedAmount<0){
+    $("goalStatus").textContent="Enter a goal name, a valid target and a non-negative saved amount.";return;
+  }
+  if(savedAmount>targetAmount){$("goalStatus").textContent="Already saved cannot exceed the target amount.";return;}
+  const goal={id:makeId("goal"),name,targetAmount,savedAmount,targetDate,createdAt:new Date().toISOString(),archived:false};
+  try{
+    await operation("savingsGoals","readwrite",store=>store.add(goal));
+    $("savingsGoalForm").reset(); $("goalSaved").value="0";
+    $("goalStatus").textContent="Savings goal saved on this device.";
+    await renderGoals(); showToast("Savings goal created.");
+  }catch(error){console.error(error);$("goalStatus").textContent="Could not save this goal.";}
+};
+
 // REFRESH ALL SCREENS
 
 async function refreshAll() {
   await render();
   await renderTransactions();
   await renderAccounts();
+  if ($("goalsScreen").classList.contains("active")) await renderGoals();
 
   if ($("budgetsScreen").classList.contains("active")) {
     await renderBudgets();
