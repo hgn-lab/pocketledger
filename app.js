@@ -1567,7 +1567,9 @@ async function renderGoals() {
     const actions = document.createElement("div");
     actions.className = "goal-actions";
     const add = document.createElement("button");
-    add.type = "button"; add.className = "secondary"; add.textContent = "Add savings";
+    add.type = "button"; add.className = "secondary";
+    add.textContent = progress.isComplete ? "Goal reached" : "Add savings";
+    add.disabled = progress.isComplete;
     add.addEventListener("click",async()=>{
       const raw=window.prompt(`How much are you adding to ${goal.name}? (IDR)`);
       if(raw===null)return;
