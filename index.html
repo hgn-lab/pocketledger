@@ -392,7 +392,8 @@
           <label>Minimum payment (IDR)<input id="minimumPayment" type="number" min="0" step="1" value="0" data-sensitive-input></label>
           <label>Repayment account<select id="paymentAccount"><option value="">Choose later</option></select></label>
         </div>
-        <label>Opening balance (IDR)<input id="openingBalance" type="number" inputmode="numeric" min="0" step="1" value="0" data-sensitive-input required></label>
+        <label><span id="openingBalanceLabel">Opening balance (IDR)</span><input id="openingBalance" type="number" inputmode="numeric" min="0" step="1" value="0" data-sensitive-input required></label>
+        <p id="openingBalanceHint" class="account-note">For credit cards, enter the amount currently owed—not the credit limit. Only the outstanding amount is counted as a liability.</p>
         <label>Opening balance date<input id="openingDate" type="date" required></label>
         <button class="primary" type="submit">Add account</button><p id="accountStatus" role="status"></p>
       </form>
