@@ -1430,3 +1430,14 @@ input[type="date"], input[type="month"] {
     font-size: 16px !important;
   }
 }
+
+
+/* Historical net worth chart: reconstructed locally from the account ledger. */
+.networth-summary { display:grid; gap:5px; padding:16px; border:1px solid #dce7dc; border-radius:16px; background:#f0f5ef; }
+.networth-summary span, .networth-summary small { color:var(--muted); font-size:11px; }
+.networth-summary strong { color:#315c49; font-size:22px; letter-spacing:-.5px; }
+.networth-summary small { line-height:1.45; }
+.networth-trend { margin-top:12px; padding:14px 12px 10px; background:#fff; border:1px solid var(--line); border-radius:16px; }
+.networth-trend svg { display:block; width:100%; height:auto; overflow:visible; }
+.networth-month-labels { display:flex; justify-content:space-between; gap:6px; margin-top:4px; color:var(--muted); font-size:9px; }
+.analytics-footnote { margin:9px 2px 0; color:var(--muted); font-size:10px; line-height:1.5; }
