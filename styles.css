@@ -1473,3 +1473,32 @@ input[type="date"], input[type="month"] {
 .goal-create-details>summary::-webkit-details-marker{display:none}
 .goal-create-details>summary span{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#edf3ec}
 .goal-create-details form{display:grid;gap:12px;margin-top:16px}
+
+
+/* Match Home and Transactions typography to the calmer Budget and Settings screens. */
+#homeScreen .month > b,
+#homeScreen .section-heading h3,
+#homeScreen > .section > h3,
+#transactionsScreen > h3,
+#transactionsScreen .heading h3 {
+  font-size: 18px;
+  line-height: 1.3;
+  letter-spacing: -.025em;
+  font-weight: 700;
+}
+#homeScreen .dashboard-subtitle { font-size: 13px; }
+#homeScreen .dashboard-recent-info strong,
+#homeScreen .dashboard-recent-row > strong { font-size: 13px; }
+#homeScreen .dashboard-recent-info small,
+#homeScreen .snapshot-metrics small { font-size: 11px; }
+#transactionsScreen form label:not(.switch label) { font-size: 13px; }
+#transactionsScreen .description { font-size: 15px; line-height: 1.35; }
+#transactionsScreen .meta { font-size: 12px; line-height: 1.4; }
+#transactionsScreen .transaction .amount { font-size: 14px; font-weight: 700; }
+.budget-setup-hint {
+  margin: -5px 2px 12px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.budget-setup-hint strong { color: var(--green); }
