@@ -99,6 +99,7 @@ test("PocketLedger browser workflows persist isolated account, ledger, transfer,
   // Create monthly and category budgets.
   await page.getByRole("button", { name: "Budgets" }).click();
   await page.locator("#budgetMonth").fill("2026-11");
+  await page.getByText("Set your monthly budget to track your spending.", { exact: true }).waitFor();
   await page.locator("#globalBudgetAmount").fill("5000000");
   await page.locator("#globalBudgetForm button[type=submit]").click();
   await page.waitForFunction(() => document.querySelector("#globalBudgetStatus")?.textContent.trim().length > 0, null, { timeout: 10000 }).catch(async () => { throw new Error("Global budget status stayed blank; month=" + await page.locator("#budgetMonth").inputValue() + ", amountValue=" + await page.locator("#globalBudgetAmount").inputValue() + ", amountType=" + await page.locator("#globalBudgetAmount").getAttribute("type") + ", amountValidity=" + await page.locator("#globalBudgetAmount").evaluate(el => JSON.stringify({valid:el.validity.valid, valueMissing:el.validity.valueMissing, rangeUnderflow:el.validity.rangeUnderflow, stepMismatch:el.validity.stepMismatch, validationMessage:el.validationMessage})) + ", pageErrors=" + pageErrors.join(" | ")); });
