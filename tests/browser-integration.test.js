@@ -101,7 +101,7 @@ test("PocketLedger browser workflows persist isolated account, ledger, transfer,
   await page.locator("#budgetMonth").fill("2026-11");
   await page.locator("#globalBudgetAmount").fill("5000000");
   await page.locator("#globalBudgetForm button[type=submit]").click();
-  await page.waitForFunction(() => document.querySelector("#globalBudgetStatus")?.textContent.trim().length > 0, null, { timeout: 10000 }).catch(async () => { throw new Error("Global budget status stayed blank; month=" + await page.locator("#budgetMonth").inputValue() + ", amountValid=" + await page.locator("#globalBudgetAmount").evaluate(el => el.validity.valid) + ", pageErrors=" + pageErrors.join(" | ")); });
+  await page.waitForFunction(() => document.querySelector("#globalBudgetStatus")?.textContent.trim().length > 0, null, { timeout: 10000 }).catch(async () => { throw new Error("Global budget status stayed blank; month=" + await page.locator("#budgetMonth").inputValue() + ", amountValue=" + await page.locator("#globalBudgetAmount").inputValue() + ", amountType=" + await page.locator("#globalBudgetAmount").getAttribute("type") + ", amountValidity=" + await page.locator("#globalBudgetAmount").evaluate(el => JSON.stringify({valid:el.validity.valid, valueMissing:el.validity.valueMissing, rangeUnderflow:el.validity.rangeUnderflow, stepMismatch:el.validity.stepMismatch, validationMessage:el.validationMessage})) + ", pageErrors=" + pageErrors.join(" | ")); });
   assert.match(await page.locator("#globalBudgetStatus").textContent(), /saved successfully/i);
   await page.locator("#budgetCategory").selectOption("Food");
   await page.locator("#categoryBudgetAmount").fill("1000000");
