@@ -2079,9 +2079,18 @@ async function captureMonthlySnapshot(method,period){
   return record;
 }
 let monthCloseTimer=null;
+function previousMonthKey(month){
+  const [year,number]=month.split("-").map(Number);
+  const date=new Date(Date.UTC(year,number-2,1));
+  return date.getUTCFullYear()+"-"+String(date.getUTCMonth()+1).padStart(2,"0");
+}
 async function checkMonthClose(){
-  const now=Date.now(),month=jakartaDateKey().slice(0,7),target=monthCloseInstant(month);
-  if(now>=target){await captureMonthlySnapshot(now<=target+300000?"scheduled-23:59":"late-reconstructed",month);scheduleMonthClose();}
+  const now=Date.now(),month=jakartaDateKey().slice(0,7),previous=previousMonthKey(month);
+  const snapshots=await allMonthlySnapshots();
+  if(!snapshots.some(x=>x.period===previous&&x.revision===0)) await captureMonthlySnapshot("late-reconstructed",previous);
+  const target=monthCloseInstant(month);
+  if(now>=target) await captureMonthlySnapshot(now<=target+300000?"scheduled-23:59":"late-reconstructed",month);
+  scheduleMonthClose();
 }
 function scheduleMonthClose(){
   if(monthCloseTimer)clearTimeout(monthCloseTimer);
