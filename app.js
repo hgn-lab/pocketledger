@@ -2135,6 +2135,7 @@ $("reconcileAccounts").addEventListener("click",()=>reconcileAccounts().catch(e=
   try {
     const accepted = await waitForTermsAcceptance();
     if (!accepted) return;
+    await window.PocketLedgerLock.initialize();
     db = await openDB();
     await processDueRecurringTransactions();
 
