@@ -1564,3 +1564,12 @@ input[type="date"], input[type="month"] {
 .terms-actions button { min-width:0; }
 .terms-status { min-height:16px; color:#a3483e; font-size:11px; margin:0; }
 @media(max-width:380px) { .terms-dialog-content { padding:17px; } .terms-actions { grid-template-columns:1fr; } }
+
+/* Transaction search and advanced filters. */
+.transaction-filters{display:grid;gap:12px;margin:4px 16px 14px;padding:14px;border:1px solid var(--line);border-radius:16px;background:#fbfcfa}
+.transaction-filters label{display:grid;gap:6px;min-width:0;color:var(--muted);font-size:11px;font-weight:650}
+.transaction-filters input,.transaction-filters select{width:100%;min-width:0;min-height:42px;padding:10px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--text,#20221f);font:inherit;font-size:13px}
+.transaction-filters .filter-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.transaction-filters .filter-search input{min-height:46px}
+.transaction-filters button{justify-self:start;min-height:38px}
+@media(max-width:350px){.transaction-filters .filter-grid{grid-template-columns:1fr}}
