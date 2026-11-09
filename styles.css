@@ -1582,3 +1582,12 @@ input[type="date"], input[type="month"] {
 .transaction-filters button{justify-self:start;min-height:35px;font-size:12px}
 @media(max-width:390px){.transaction-filters .filter-grid{grid-template-columns:1fr}}
 
+
+.networth-breakdown{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:10px}
+.networth-breakdown>div{display:grid;gap:5px;min-width:0;padding:12px;border:1px solid #e8ebe4;border-radius:13px;background:#fff}
+.networth-breakdown>div:last-child{grid-column:1/-1}
+.networth-breakdown span{color:var(--muted);font-size:10px;line-height:1.35}
+.networth-breakdown strong{font-size:14px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+#netWorthMonthlyChange.positive{color:#47775a}
+#netWorthMonthlyChange.negative{color:#b45a4d}
+@media(max-width:360px){.networth-breakdown strong{font-size:12px}}
