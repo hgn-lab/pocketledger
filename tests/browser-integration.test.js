@@ -133,7 +133,7 @@ test("PocketLedger browser workflows persist isolated account, ledger, transfer,
   assert.equal(snapshot.transfers.length, 1);
   assert.equal(snapshot.budgets.length, 2);
   assert.equal(snapshot.savingsGoals.length, 1);
-  assert.equal(snapshot.journalEntries.filter(x => x.accountId).length, 4, "opening balances, expense and transfer should create four account-side ledger rows");
+  assert.equal(snapshot.journalEntries.filter(x => x.accountId).length, 5, "two opening balances, expense and transfer should create five account-side ledger rows");
   assert.equal(snapshot.transactions[0].accountId, cash.id);
   assert.equal(snapshot.transactions[0].amount, 150000);
   assert.equal(snapshot.transfers[0].amount, 100000);
