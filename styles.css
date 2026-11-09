@@ -1591,3 +1591,5 @@ input[type="date"], input[type="month"] {
 #netWorthMonthlyChange.positive{color:#47775a}
 #netWorthMonthlyChange.negative{color:#b45a4d}
 @media(max-width:360px){.networth-breakdown strong{font-size:12px}}
+
+.phase4-panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px}.phase4-list{display:grid;gap:9px}.phase4-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:12px;border:1px solid var(--line);border-radius:12px}.phase4-row strong{font-size:13px;overflow-wrap:anywhere}.phase4-row small{grid-column:1/-1;color:var(--muted);font-size:11px;line-height:1.4}.phase4-status{font-size:12px;line-height:1.5;overflow-wrap:anywhere}.phase4-milestone{margin:0;padding:11px 12px;background:#f6f5ef;border-radius:11px;font-size:12px;line-height:1.45}
