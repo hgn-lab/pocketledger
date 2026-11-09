@@ -63,7 +63,10 @@ jobs:
             ['transaction search remains visible outside collapsed filters', html.includes('class="transaction-search-card"') && html.indexOf('id="transactionSearch"') < html.indexOf('class="transaction-filter-card"')],
             ['secondary transaction filters are collapsed by default', html.includes('<details class="transaction-filter-card">') && !html.includes('<details open class="transaction-filter-card">')],
             ['date filters use constrained responsive widths', css.includes('.transaction-filters input[type="date"]') && css.includes('max-width:100%')],
-            ['service worker cache version refreshed', sw.includes('pocketledger-v51')]
+            ['net worth history uses tested shared calculation', fs.readFileSync('finance-core.js', 'utf8').includes('function calculateNetWorthHistory') && fs.readFileSync('app.js', 'utf8').includes('PocketLedgerCore.calculateNetWorthHistory')],
+            ['net worth breakdown and monthly movement are displayed', ['netWorthAssets','netWorthLiabilities','netWorthMonthlyChange'].every(id => html.includes('id="' + id + '"'))],
+            ['net worth history tests cover opening dates and current cutoff', fs.readFileSync('tests/finance-core.test.js', 'utf8').includes('net worth history reconstructs assets, liabilities') && fs.readFileSync('tests/finance-core.test.js', 'utf8').includes('excludes activity before opening')],
+            ['service worker cache version refreshed', sw.includes('pocketledger-v52')]
           ];
           for (const [label, ok] of checks) console.log((ok ? 'PASS: ' : 'FAIL: ') + label);
           if (checks.some(([, ok]) => !ok)) process.exit(1);
