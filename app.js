@@ -504,6 +504,7 @@ async function renderBudgets() {
     all(),
     allBudgets()
   ]);
+  $("budgetMonth").dataset.renderedMonth = month;
 
   const expenses = PocketLedgerCore.expenseRowsForMonth(transactions, month);
   const totalSpent = PocketLedgerCore.sumAmounts(expenses);
@@ -1872,7 +1873,7 @@ document.querySelectorAll("[data-go-screen]").forEach(button => {
 $("month").onchange = () =>
   render().catch(console.error);
 
-$("budgetMonth").onchange = () => renderBudgets().catch(console.error);
+$("budgetMonth").onchange = () => { $("budgetMonth").dataset.renderedMonth = ""; renderBudgets().catch(console.error); };
 $("budgetDay").onchange = () => renderBudgets().catch(console.error);
 $("budgetYear").onchange = () => renderBudgets().catch(console.error);
 document.querySelectorAll("[data-budget-period]").forEach(button => button.addEventListener("click", () => { budgetPeriod=button.dataset.budgetPeriod; renderBudgets().catch(console.error); }));
