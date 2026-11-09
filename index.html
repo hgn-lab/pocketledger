@@ -352,6 +352,39 @@
       <h3>Transactions</h3>
       <small id="count">0 items</small>
     </div>
+    <section class="transaction-filters" aria-label="Search and filter transactions">
+      <label class="filter-search">Search transactions
+        <input id="transactionSearch" type="search" maxlength="80" placeholder="Search description">
+      </label>
+      <div class="filter-grid">
+        <label>Type
+          <select id="transactionTypeFilter">
+            <option value="all">All types</option><option value="expense">Expenses</option><option value="income">Income</option>
+          </select>
+        </label>
+        <label>Category
+          <select id="transactionCategoryFilter">
+            <option value="all">All categories</option>
+            <option>Food</option><option>Transport</option><option>Shopping</option><option>Housing</option><option>Bills</option><option>Health</option><option>Entertainment</option><option>Salary</option><option>Business</option><option>Investment</option><option>Other</option>
+          </select>
+        </label>
+        <label>Account
+          <select id="transactionAccountFilter"><option value="all">All accounts</option><option value="unassigned">Unassigned</option></select>
+        </label>
+        <label>Sort by
+          <select id="transactionSort">
+            <option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="highest">Highest amount</option><option value="lowest">Lowest amount</option>
+          </select>
+        </label>
+        <label>From
+          <input id="transactionDateFrom" type="date">
+        </label>
+        <label>To
+          <input id="transactionDateTo" type="date">
+        </label>
+      </div>
+      <button id="clearTransactionFilters" class="secondary" type="button">Clear filters</button>
+    </section>
     <section id="list" class="list"></section>
   </section>
 
