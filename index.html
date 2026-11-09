@@ -352,12 +352,14 @@
       <h3>Transactions</h3>
       <small id="count">0 items</small>
     </div>
-    <details class="transaction-filter-card">
-      <summary><span>Search &amp; filter</span><small>＋</small></summary>
-      <section class="transaction-filters" aria-label="Search and filter transactions">
+    <section class="transaction-search-card" aria-label="Search transactions">
       <label class="filter-search">Search transactions
         <input id="transactionSearch" type="search" maxlength="80" placeholder="Search description">
       </label>
+    </section>
+    <details class="transaction-filter-card">
+      <summary><span>Filters</span><small>＋</small></summary>
+      <section class="transaction-filters" aria-label="Transaction filters">
       <div class="filter-grid">
         <label>Type
           <select id="transactionTypeFilter">
