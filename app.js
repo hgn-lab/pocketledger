@@ -2109,7 +2109,7 @@ function auditPocketLedger(accounts,entries,transactions,transfers,goals,snapsho
 async function reconcileAccounts(){
   const accounts=await accountBalances();if(!accounts.length){showToast("Add an account before reconciling.","error");return;}
   const rows=[];
-  for(const a of accounts){const raw=prompt("Actual balance for "+a.name+" (IDR). Recorded: "+a.balance,String(a.balance));if(raw===null)return;const actual=Number(raw.trim());if(!Number.isSafeInteger(actual)){showToast("Enter a whole IDR amount.","error");return;}rows.push({name:a.name,difference:actual-a.balance});}
+  for(const a of accounts){const raw=prompt("Actual balance for "+a.name+" (IDR). Recorded: "+a.balance,String(a.balance));if(raw===null)return;const input=raw.trim();if(input===""){showToast("Balance cannot be blank. Enter a whole IDR amount.","error");return;}const actual=Number(input);if(!Number.isSafeInteger(actual)){showToast("Enter a whole IDR amount.","error");return;}rows.push({name:a.name,difference:actual-a.balance});}
   $("reconciliationResult").textContent=rows.map(x=>x.name+": "+(x.difference===0?"Matched":(x.difference>0?"+":"")+money(x.difference))).join(" · ");
   showToast(rows.every(x=>x.difference===0)?"All accounts reconciled.":"Differences found.",rows.every(x=>x.difference===0)?"success":"error");
 }
