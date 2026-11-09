@@ -146,7 +146,7 @@ test("backup payload validates all six stores and rejects malformed records befo
   const data = Object.fromEntries(stores.map(name => [name, []]));
   data.transactions.push({ id: 1, type: "expense", amount: 25000, date: "2026-11-09", description: "Lunch" });
   data.budgets.push({ id: "2026-11_Food", month: "2026-11", category: "Food", amount: 1000000 });
-  data.accounts.push({ id: "cash", name: "Cash", classification: "asset", openingBalance: 100000 });
+  data.accounts.push({ id: "cash", name: "Cash", classification: "asset", openingBalance: 100000 }, { id: "bank", name: "Bank", classification: "asset", openingBalance: 0 });
   data.journalEntries.push({ id: "je1", accountId: "cash", amount: 10000, balanceDelta: -10000, date: "2026-11-09" });
   data.transfers.push({ id: "tr1", fromAccountId: "cash", toAccountId: "bank", amount: 10000, date: "2026-11-09" });
   data.savingsGoals.push({ id: "goal1", name: "Emergency fund", targetAmount: 1000000, savedAmount: 250000 });
@@ -155,4 +155,6 @@ test("backup payload validates all six stores and rejects malformed records befo
   assert.throws(() => core.validateBackupData({ ...data, savingsGoals: [{ id: "bad", name: "", targetAmount: 0, savedAmount: -1 }] }, stores), RangeError);
   assert.throws(() => core.validateBackupData({ ...data, accounts: [{ id: "cash" }, { id: "cash" }] }, stores), RangeError);
   assert.throws(() => core.validateBackupData({ ...data, transfers: [] }, [...stores, "missingStore"]), RangeError);
+  assert.throws(() => core.validateBackupData({ ...data, transfers: [{ id: "tr2", fromAccountId: "cash", toAccountId: "missing", amount: 1000, date: "2026-11-09" }] }, stores), RangeError);
+  assert.throws(() => core.validateBackupData({ ...data, transactions: [{ id: 2, type: "expense", amount: 1000, date: "2026-11-09", description: "Missing account", accountId: "ghost" }] }, stores), RangeError);
 });
