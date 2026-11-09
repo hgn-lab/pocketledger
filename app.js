@@ -1,4 +1,5 @@
 
+  "Search transactions":"Cari transaksi","Search description":"Cari deskripsi","All types":"Semua jenis","Expenses":"Pengeluaran","All categories":"Semua kategori","All accounts":"Semua akun","Unassigned":"Belum ditautkan","Sort by":"Urutkan","Newest first":"Terbaru","Oldest first":"Terlama","Highest amount":"Nominal tertinggi","Lowest amount":"Nominal terendah","From":"Dari tanggal","To":"Sampai tanggal","Clear filters":"Hapus filter","No transactions match these filters.":"Tidak ada transaksi yang cocok dengan filter.","items":"item",
 const $ = id => document.getElementById(id);
 
 let toastTimer;
@@ -412,15 +413,47 @@ async function renderRecentActivity() {
 
 // TRANSACTIONS
 
+async function populateTransactionAccountFilter(){
+ const select=$("transactionAccountFilter"),previous=select.value,accounts=(await allAccounts()).filter(account=>account.active!==false);
+ select.replaceChildren(new Option("All accounts","all"),new Option("Unassigned","unassigned"));
+ accounts.forEach(account=>select.add(new Option(account.name,account.id)));
+ if([...select.options].some(option=>option.value===previous))select.value=previous;
+}
+function transactionFilterRows(rows){
+ const query=$("transactionSearch").value.trim().toLocaleLowerCase();
+ const type=$("transactionTypeFilter").value,category=$("transactionCategoryFilter").value,account=$("transactionAccountFilter").value;
+ const from=$("transactionDateFrom").value,to=$("transactionDateTo").value,sort=$("transactionSort").value;
+ let filtered=rows.filter(item=>{
+  if(query&&!String(item.description||"").toLocaleLowerCase().includes(query))return false;
+  if(type!=="all"&&item.type!==type)return false;
+  if(category!=="all"&&(item.category||"Other")!==category)return false;
+  if(account==="unassigned"&&item.accountId)return false;
+  if(account!=="all"&&account!=="unassigned"&&item.accountId!==account)return false;
+  if(from&&item.date<from)return false;
+  if(to&&item.date>to)return false;
+  return true;
+ });
+ filtered.sort((a,b)=>{
+  if(sort==="oldest")return a.date.localeCompare(b.date)||String(a.id).localeCompare(String(b.id));
+  if(sort==="highest")return b.amount-a.amount||b.date.localeCompare(a.date);
+  if(sort==="lowest")return a.amount-b.amount||b.date.localeCompare(a.date);
+  return b.date.localeCompare(a.date)||String(b.id).localeCompare(String(a.id));
+ });
+ return filtered;
+}
 async function renderTransactions(){
- const rows=(await all()).sort((a,b)=>b.date.localeCompare(a.date)||String(b.id).localeCompare(String(a.id)));$("count").textContent=`${rows.length} items`;const list=$("list");list.replaceChildren();
- if(!rows.length){const empty=document.createElement("div");empty.className="empty";empty.textContent="No transactions yet.";list.append(empty);return;}
+ const allRows=await all(),rows=transactionFilterRows(allRows);
+ $("count").textContent=rows.length===allRows.length?`${rows.length} items`:`${rows.length} of ${allRows.length} items`;
+ const list=$("list");list.replaceChildren();
+ if(!rows.length){const empty=document.createElement("div");empty.className="empty";empty.textContent=allRows.length?"No transactions match these filters.":"No transactions yet.";list.append(empty);return;}
  for(const item of rows){const row=document.createElement("div");row.className="transaction";const icon=document.createElement("div");icon.className="transaction-category-icon";icon.innerHTML=categoryIcon(item.category);icon.setAttribute("aria-hidden","true");const info=document.createElement("div");info.className="transaction-info";const title=document.createElement("div");title.className="description";title.textContent=item.description;const meta=document.createElement("div");meta.className="meta";meta.textContent=`${item.category||"Other"} · ${item.date} · ${item.accountId?"Account linked":"Unassigned"}${item.recurringRule?" · Recurring":item.recurringSourceId?" · Recurring entry":""}`;info.append(title,meta);
  const right=document.createElement("div");right.className="right";const amount=document.createElement("div");amount.className="amount "+(item.type==="income"?"positive":"negative");setSensitiveText(amount,(item.type==="income"?"+":"−")+money(item.amount));const actions=document.createElement("div");actions.className="transaction-actions";
  const edit=document.createElement("button");edit.className="delete";edit.textContent="Edit";edit.onclick=async()=>{await populateTransactionAccountSelect();$("description").value=item.description;$("amount").value=String(item.amount);$("date").value=item.date;$("category").value=item.category||"Other";$("transactionAccount").value=item.accountId||"";const radio=document.querySelector(`input[name="type"][value="${item.type}"]`);if(radio)radio.checked=true;$("categoryIconPreview").innerHTML=categoryIcon(item.category);$("editingTransactionId").value=String(item.id);$("recurringEnabled").checked=!!item.recurringRule;$("recurringFrequency").value=item.recurringRule?.frequency||"monthly";$("recurringOptions").hidden=!item.recurringRule;$("formSubmitLabel").textContent="Save changes";$("cancelTransactionEdit").hidden=false;$("transactionFormHeading").textContent="Edit transaction";$("status").textContent="Editing an existing transaction. Save changes when finished.";$("form").scrollIntoView({behavior:"smooth",block:"start"});};
  const del=document.createElement("button");del.className="delete";del.textContent="Delete";del.onclick=async()=>{const allRows=await all(),ids=new Set([item.id]);if(item.recurringRule)allRows.filter(x=>x.recurringSourceId===item.id).forEach(x=>ids.add(x.id));if(!confirm(item.recurringRule?"Delete this recurring transaction and all entries generated from it?":"Delete this transaction? Its linked ledger entries will also be removed."))return;await atomicWrite(["transactions","journalEntries"],tx=>{const transactions=tx.objectStore("transactions"),entries=tx.objectStore("journalEntries");ids.forEach(id=>transactions.delete(id));entries.getAll().onsuccess=event=>event.target.result.filter(entry=>ids.has(entry.transactionId)).forEach(entry=>entries.delete(entry.id));});await refreshAll();};
  actions.append(edit,del);right.append(amount,actions);row.append(icon,info,right);list.append(row);}
 }
+["transactionSearch","transactionTypeFilter","transactionCategoryFilter","transactionAccountFilter","transactionDateFrom","transactionDateTo","transactionSort"].forEach(id=>$(id).addEventListener(id==="transactionSearch"?"input":"change",()=>renderTransactions().catch(console.error)));
+$("clearTransactionFilters").addEventListener("click",()=>{["transactionSearch","transactionDateFrom","transactionDateTo"].forEach(id=>$(id).value="");["transactionTypeFilter","transactionCategoryFilter","transactionAccountFilter"].forEach(id=>$(id).value="all");$("transactionSort").value="newest";renderTransactions().catch(console.error);});
 
 // BUDGET CALCULATIONS
 
