@@ -158,3 +158,37 @@ test("backup payload validates all six stores and rejects malformed records befo
   assert.throws(() => core.validateBackupData({ ...data, transfers: [{ id: "tr2", fromAccountId: "cash", toAccountId: "missing", amount: 1000, date: "2026-11-09" }] }, stores), RangeError);
   assert.throws(() => core.validateBackupData({ ...data, transactions: [{ id: 2, type: "expense", amount: 1000, date: "2026-11-09", description: "Missing account", accountId: "ghost" }] }, stores), RangeError);
 });
+
+test("net worth history reconstructs assets, liabilities and dated ledger movements", () => {
+  const accounts = [
+    { id: "cash", classification: "asset", openingBalance: 100000, openingBalanceDate: "2026-01-01" },
+    { id: "loan", classification: "liability", openingBalance: 50000, openingBalanceDate: "2026-01-01" },
+    { id: "late", classification: "asset", openingBalance: 90000, openingBalanceDate: "2026-03-15" }
+  ];
+  const entries = [
+    { accountId: "cash", date: "2026-01-31", balanceDelta: -10000 },
+    { accountId: "cash", date: "2026-02-01", balanceDelta: 20000 },
+    { accountId: "loan", date: "2026-02-15", balanceDelta: -5000 },
+    { accountId: "late", date: "2026-03-14", balanceDelta: 10000 },
+    { accountId: "late", date: "2026-03-20", balanceDelta: 5000 },
+    { accountId: "cash", date: "2026-04-01", balanceDelta: 100000 }
+  ];
+  const history = core.calculateNetWorthHistory(accounts, entries, ["2026-01", "2026-02", "2026-03", "2026-04"], "2026-03-25");
+  assert.deepEqual(history.map(({ assets, liabilities, netWorth }) => ({ assets, liabilities, netWorth })), [
+    { assets: 90000, liabilities: 50000, netWorth: 40000 },
+    { assets: 120000, liabilities: 45000, netWorth: 75000 },
+    { assets: 195000, liabilities: 45000, netWorth: 150000 },
+    { assets: 195000, liabilities: 45000, netWorth: 150000 }
+  ]);
+  assert.equal(history[3].cutoff, "2026-03-25");
+});
+
+test("net worth history excludes activity before opening and after the current date", () => {
+  const history = core.calculateNetWorthHistory(
+    [{ id: "asset", classification: "asset", openingBalance: 1000, openingBalanceDate: "2026-02-10" }],
+    [{ accountId: "asset", date: "2026-02-09", balanceDelta: 500 }, { accountId: "asset", date: "2026-02-20", balanceDelta: 200 }, { accountId: "asset", date: "2026-03-01", balanceDelta: 300 }],
+    ["2026-01", "2026-02", "2026-03"], "2026-02-20"
+  );
+  assert.deepEqual(history.map(item => item.netWorth), [0, 1200, 1200]);
+  assert.throws(() => core.calculateNetWorthHistory([], [], ["2026-13"], "2026-02-20"), RangeError);
+});
