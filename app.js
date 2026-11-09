@@ -217,17 +217,15 @@ const makeId = prefix => `${prefix}_${Date.now()}_${Math.random().toString(36).s
 
 async function accountBalances() {
   const [accounts, entries] = await Promise.all([allAccounts(), allJournalEntries()]);
-  return accounts.map(account => {
-    const movement = entries.filter(entry => entry.accountId === account.id)
-      .reduce((sum, entry) => sum + Number(entry.balanceDelta || 0), 0);
-    return { ...account, balance: Number(account.openingBalance || 0) + movement };
-  });
+  return accounts.map(account => ({
+    ...account,
+    balance: PocketLedgerCore.calculateAccountBalance(account.openingBalance, entries, account.id)
+  }));
 }
 
 function ledgerEntry(account, amount, direction, date, details) {
   // balanceDelta is positive when the account's displayed balance increases.
-  const assetDelta = direction === "increase" ? amount : -amount;
-  const balanceDelta = account.classification === "liability" ? -assetDelta : assetDelta;
+  const balanceDelta = PocketLedgerCore.calculateLedgerBalanceDelta(account.classification, direction, amount);
   return { id: makeId("je"), accountId: account.id, amount,
     side: direction === "increase" ? "debit" : "credit",
     balanceDelta, date, ...details, createdAt: new Date().toISOString() };
@@ -1036,10 +1034,8 @@ async function renderAccounts() {
   const cardList=$("creditCardList"); cardList.replaceChildren();
   if (!cards.length) { const empty=document.createElement("p"); empty.className="empty"; empty.textContent="No credit cards yet. Add one below to track limit, outstanding balance and available credit."; cardList.append(empty); }
   cards.forEach(account => {
-    const limit = Number(account.creditLimit || 0);
-    const outstanding = Number(account.balance || 0);
-    const available = limit - outstanding;
-    const usage = limit > 0 ? Math.max(0, Math.min(100, outstanding / limit * 100)) : 0;
+    const credit = PocketLedgerCore.calculateCreditMetrics(account.creditLimit, account.balance);
+    const { limit, outstanding, availableCredit: available, progressPercent: usage } = credit;
 
     const card = document.createElement("button");
     card.type = "button";
