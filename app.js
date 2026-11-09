@@ -1441,20 +1441,13 @@ function translateNode(root = document.body) {
 function setAppLanguage(language) {
   appLanguage = language === "id" ? "id" : "en";
   try { localStorage.setItem(LANGUAGE_KEY, appLanguage); } catch (error) { console.warn("Could not save language preference.", error); }
-  if (appLanguage === "en") {
-    location.reload();
-    return;
-  }
-  translateNode();
-  const selector = $("languageSelect");
-  if (selector) selector.value = appLanguage;
+  location.reload();
 }
 function initializeLanguage() {
   try { appLanguage = localStorage.getItem(LANGUAGE_KEY) === "id" ? "id" : "en"; } catch (error) { appLanguage = "en"; }
   const selector = $("languageSelect");
   if (selector) {
     selector.value = appLanguage;
-    selector.addEventListener("change", () => setAppLanguage(selector.value));
   }
   if (appLanguage === "id") {
     translateNode();
@@ -1467,7 +1460,7 @@ function initializeLanguage() {
 }
 
 // Terms must be accepted before the local finance database is opened.
-const TERMS_ACCEPTANCE_KEY = "pocketledgerTermsAccepted_v1";
+const TERMS_ACCEPTANCE_KEY = "pocketledgerTermsAccepted_v2";
 function openTermsDialog(isGate = false) {
   const dialog = $("termsDialog");
   $("termsConsent").checked = false;
@@ -1520,6 +1513,7 @@ function waitForTermsAcceptance() {
     $("termsDialog").addEventListener("cancel", event => { event.preventDefault(); $("termsStatus").textContent = "Please agree to the terms or leave PocketLedger."; }, { once:true });
   });
 }
+$("applyLanguage").addEventListener("click", () => setAppLanguage($("languageSelect").value));
 $("viewTerms").addEventListener("click", () => openTermsDialog(false));
 $("termsConsent").addEventListener("change", () => { $("termsAccept").disabled = !$("termsConsent").checked; });
 $("termsAccept").addEventListener("click", () => {
