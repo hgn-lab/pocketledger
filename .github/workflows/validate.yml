@@ -54,7 +54,11 @@ jobs:
             ['terms language follows saved app language', fs.readFileSync('app.js', 'utf8').includes('termsSelector.value = appLanguage')],
             ['terms acceptance version refreshed', fs.readFileSync('app.js', 'utf8').includes('pocketledgerTermsAccepted_v3')],
             ['terms can be reopened from Settings', html.includes('id="viewTerms"')],
-            ['service worker cache version refreshed', sw.includes('pocketledger-v48')]
+            ['transaction search and filter controls exist', ['transactionSearch','transactionTypeFilter','transactionCategoryFilter','transactionAccountFilter','transactionDateFrom','transactionDateTo','transactionSort','clearTransactionFilters'].every(id => html.includes('id="' + id + '"'))],
+            ['transaction filters include all sort modes', ['newest','oldest','highest','lowest'].every(value => html.includes('value="' + value + '"'))],
+            ['transaction filters are wired to rendering', fs.readFileSync('app.js', 'utf8').includes('function transactionFilterRows') && fs.readFileSync('app.js', 'utf8').includes('clearTransactionFilters')],
+            ['transaction account filter is populated from local accounts', fs.readFileSync('app.js', 'utf8').includes('async function populateTransactionAccountFilter')],
+            ['service worker cache version refreshed', sw.includes('pocketledger-v49')]
           ];
           for (const [label, ok] of checks) console.log((ok ? 'PASS: ' : 'FAIL: ') + label);
           if (checks.some(([, ok]) => !ok)) process.exit(1);
