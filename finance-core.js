@@ -109,11 +109,55 @@
     return date.toISOString().slice(0, 10);
   }
 
+
+  function calculateLedgerBalanceDelta(classification, direction, amountValue) {
+    const amount = Number(amountValue);
+    if (!["asset", "liability"].includes(classification) ||
+        !["increase", "decrease"].includes(direction) ||
+        !Number.isSafeInteger(amount) || amount <= 0) {
+      throw new RangeError("Ledger movement requires a valid account type, direction and positive whole-IDR amount.");
+    }
+    const movement = direction === "increase" ? amount : -amount;
+    return classification === "liability" ? -movement : movement;
+  }
+
+  function calculateAccountBalance(openingBalanceValue, entries, accountId) {
+    const openingBalance = Number(openingBalanceValue || 0);
+    if (!Number.isSafeInteger(openingBalance) || openingBalance < 0) {
+      throw new RangeError("Opening balance must be a non-negative whole-IDR amount.");
+    }
+    let balance = openingBalance;
+    for (const entry of (Array.isArray(entries) ? entries : [])) {
+      if (!entry || entry.accountId !== accountId) continue;
+      const delta = Number(entry.balanceDelta || 0);
+      if (!Number.isSafeInteger(delta)) throw new RangeError("Ledger entry contains an invalid balance movement.");
+      const next = balance + delta;
+      if (!Number.isSafeInteger(next)) throw new RangeError("Account balance exceeds the supported IDR range.");
+      balance = next;
+    }
+    return balance;
+  }
+
+  function calculateCreditMetrics(limitValue, outstandingValue) {
+    const limit = Number(limitValue || 0);
+    const outstanding = Number(outstandingValue || 0);
+    if (!Number.isSafeInteger(limit) || limit < 0 ||
+        !Number.isSafeInteger(outstanding)) {
+      throw new RangeError("Credit limit and outstanding balance must be whole-IDR amounts.");
+    }
+    const utilizationPercent = limit > 0 ? outstanding / limit * 100 : 0;
+    return {
+      limit, outstanding, availableCredit: limit - outstanding,
+      utilizationPercent, progressPercent: Math.max(0, Math.min(100, utilizationPercent)),
+      isOverLimit: limit > 0 && outstanding > limit
+    };
+  }
+
   function calculateGoalProgress(savedValue, targetValue) {
     const saved = validAmount(savedValue);
     const target = Number.isSafeInteger(Number(targetValue)) && Number(targetValue) > 0 ? Number(targetValue) : 1;
     return { saved, target, remaining: Math.max(0, target - saved), percent: Math.min(100, saved / target * 100), isComplete: saved >= target };
   }
 
-  return { isValidDate, isValidMonth, daysInMonth, getPeriodRange, sumAmounts, expenseRowsForMonth, categoryTotals, calculateBudgetMetrics, calculateGoalProgress, nextRecurringDate };
+  return { isValidDate, isValidMonth, daysInMonth, getPeriodRange, sumAmounts, expenseRowsForMonth, categoryTotals, calculateBudgetMetrics, calculateGoalProgress, nextRecurringDate, calculateLedgerBalanceDelta, calculateAccountBalance, calculateCreditMetrics };
 });
