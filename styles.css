@@ -1565,17 +1565,20 @@ input[type="date"], input[type="month"] {
 .terms-status { min-height:16px; color:#a3483e; font-size:11px; margin:0; }
 @media(max-width:380px) { .terms-dialog-content { padding:17px; } .terms-actions { grid-template-columns:1fr; } }
 
-/* Quiet, collapsible transaction filters styled like the compact Add Account card. */
-.transaction-filter-card{margin:4px 16px 14px;padding:0 14px;border:1px solid #e6e8e1;border-radius:17px;background:#fff;box-shadow:0 5px 16px rgba(36,55,42,.035)}
-.transaction-filter-card>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:54px;list-style:none;cursor:pointer;color:#45594d;font-size:13px;font-weight:600}
+/* Always-visible search; secondary filters stay tucked into a compact disclosure. */
+.transaction-search-card{margin:4px 16px 8px;padding:12px 14px;border:1px solid #e6e8e1;border-radius:16px;background:#fff;box-shadow:0 5px 16px rgba(36,55,42,.03)}
+.transaction-filter-card{margin:0 16px 14px;padding:0 14px;border:1px solid #e6e8e1;border-radius:15px;background:#fff}
+.transaction-filter-card>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:43px;list-style:none;cursor:pointer;color:#59665c;font-size:12px;font-weight:600}
 .transaction-filter-card>summary::-webkit-details-marker{display:none}
-.transaction-filter-card>summary small{display:grid;place-items:center;width:29px;height:29px;border-radius:50%;background:#eaf1e9;color:#315c49;font-size:17px;line-height:1}
-.transaction-filter-card[open]>summary{padding-bottom:10px;border-bottom:1px solid #eef0eb}
+.transaction-filter-card>summary small{display:grid;place-items:center;width:25px;height:25px;border-radius:50%;background:#eaf1e9;color:#315c49;font-size:16px;line-height:1}
+.transaction-filter-card[open]>summary{padding-bottom:8px;border-bottom:1px solid #eef0eb}
 .transaction-filter-card[open]>summary small{transform:rotate(45deg)}
-.transaction-filters{display:grid;gap:11px;padding:12px 0 14px}
-.transaction-filters label{display:grid;gap:5px;min-width:0;color:#737970;font-size:11px;font-weight:600}
-.transaction-filters input,.transaction-filters select{width:100%;min-width:0;min-height:39px;padding:8px 10px;border:1px solid #e8eae4;border-radius:10px;background:#fff;color:#292c28;font:inherit;font-size:13px;line-height:1.25}
-.transaction-filters .filter-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-.transaction-filters .filter-search input{min-height:41px}
+.transaction-filters{display:grid;gap:12px;padding:12px 0 13px}
+.transaction-filters label,.transaction-search-card label{display:grid;gap:6px;min-width:0;color:#737970;font-size:11px;font-weight:600;line-height:1.35}
+.transaction-filters input,.transaction-filters select,.transaction-search-card input{display:block;box-sizing:border-box;width:100%;max-width:100%;min-width:0;height:40px;padding:8px 10px;border:1px solid #e8eae4;border-radius:10px;background:#fff;color:#292c28;font-family:inherit;font-size:13px;font-weight:400;line-height:1.2}
+.transaction-search-card input{height:43px;font-size:14px}
+.transaction-filters .filter-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 10px}
+.transaction-filters input[type="date"]{min-width:0;width:100%;max-width:100%;font-size:12px;padding:7px 5px;appearance:none;-webkit-appearance:none}
 .transaction-filters button{justify-self:start;min-height:35px;font-size:12px}
-@media(max-width:350px){.transaction-filters .filter-grid{grid-template-columns:1fr}}
+@media(max-width:390px){.transaction-filters .filter-grid{grid-template-columns:1fr}}
+
