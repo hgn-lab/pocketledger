@@ -201,9 +201,18 @@
   }
 
 
+  function validateMonthlySnapshot(s) {
+    return !!s && typeof s==="object" && typeof s.id==="string" && isValidMonth(s.period) &&
+      Number.isSafeInteger(s.revision) && s.revision>=0 && isValidDate(s.cutoff) &&
+      isValidDate((s.capturedAt||"").slice(0,10)) && s.timezone==="Asia/Jakarta" &&
+      ["scheduled-23:59","late-reconstructed","restated"].includes(s.method) &&
+      Number.isSafeInteger(s.assets) && Number.isSafeInteger(s.liabilities) &&
+      Number.isSafeInteger(s.netWorth) && s.netWorth===s.assets-s.liabilities;
+  }
+
   function validateBackupEnvelope(envelope) {
     if (!envelope || typeof envelope !== "object" || Array.isArray(envelope) ||
-        envelope.format !== "pocketledger-encrypted-backup" || envelope.version !== 1 ||
+        envelope.format !== "pocketledger-encrypted-backup" || ![1, 2].includes(envelope.version) ||
         envelope.cipher !== "AES-256-GCM" || envelope.kdf !== "PBKDF2-SHA-256" ||
         envelope.iterations !== 310000 ||
         typeof envelope.salt !== "string" || !/^[A-Za-z0-9+/]{22}==$/.test(envelope.salt) ||
@@ -236,6 +245,7 @@
         if (name === "journalEntries" && (!Number.isSafeInteger(record.amount) || record.amount < 0 || !isValidDate(record.date) || typeof record.accountId !== "string" || !record.accountId || !Number.isSafeInteger(Number(record.balanceDelta || 0)))) throw new RangeError("Backup contains an invalid ledger entry.");
         if (name === "transfers" && (!Number.isSafeInteger(record.amount) || record.amount <= 0 || typeof record.fromAccountId !== "string" || typeof record.toAccountId !== "string" || record.fromAccountId === record.toAccountId || !isValidDate(record.date))) throw new RangeError("Backup contains an invalid transfer.");
         if (name === "savingsGoals" && (typeof record.name !== "string" || !record.name.trim() || !Number.isSafeInteger(Number(record.targetAmount)) || Number(record.targetAmount) <= 0 || !Number.isSafeInteger(Number(record.savedAmount || 0)) || Number(record.savedAmount || 0) < 0 || (record.targetDate && !isValidDate(record.targetDate)))) throw new RangeError("Backup contains an invalid savings goal.");
+        if (name === "monthlySnapshots" && !validateMonthlySnapshot(record)) throw new RangeError("Backup contains an invalid monthly snapshot.");
       }
     }
     if (storeNames.includes("accounts")) {
@@ -256,5 +266,5 @@
     return true;
   }
 
-  return { calculateNetWorthHistory, validateBackupEnvelope, validateBackupData, isValidDate, isValidMonth, daysInMonth, getPeriodRange, sumAmounts, expenseRowsForMonth, categoryTotals, calculateBudgetMetrics, calculateGoalProgress, nextRecurringDate, calculateLedgerBalanceDelta, calculateAccountBalance, calculateCreditMetrics };
+  return { calculateNetWorthHistory, validateMonthlySnapshot, validateBackupEnvelope, validateBackupData, isValidDate, isValidMonth, daysInMonth, getPeriodRange, sumAmounts, expenseRowsForMonth, categoryTotals, calculateBudgetMetrics, calculateGoalProgress, nextRecurringDate, calculateLedgerBalanceDelta, calculateAccountBalance, calculateCreditMetrics };
 });
