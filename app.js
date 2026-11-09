@@ -815,37 +815,30 @@ async function renderAnalytics() {
   // Reconstruct historical month-end net worth from account opening balances and dated ledger entries.
   // Credit limits are intentionally excluded: only each liability account's outstanding balance is counted.
   const [accounts, journalEntries] = await Promise.all([allAccounts(), allJournalEntries()]);
-  const netWorthMonths = [];
+  const historyMonths = [];
   for (let offset = 11; offset >= 0; offset--) {
-    const monthDate = new Date(selectedYear, selectedMonthNumber - 1 - offset, 1);
-    const key = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, "0")}`;
-    const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
-    let cutoff = `${monthEnd.getFullYear()}-${String(monthEnd.getMonth() + 1).padStart(2, "0")}-${String(monthEnd.getDate()).padStart(2, "0")}`;
-    const today = localDate();
-    if (cutoff > today) cutoff = today;
-    let assetsAtDate = 0;
-    let liabilitiesAtDate = 0;
-    for (const account of accounts) {
-      const openingDate = account.openingBalanceDate || (account.createdAt || "").slice(0, 10);
-      if (!openingDate || openingDate > cutoff) continue;
-      const movement = journalEntries
-        .filter(entry => entry.accountId === account.id && entry.date >= openingDate && entry.date <= cutoff)
-        .reduce((sum, entry) => sum + Number(entry.balanceDelta || 0), 0);
-      const balanceAtDate = Number(account.openingBalance || 0) + movement;
-      if (account.classification === "asset") assetsAtDate += balanceAtDate;
-      else if (account.classification === "liability") liabilitiesAtDate += balanceAtDate;
-    }
-    netWorthMonths.push({
-      key, label: monthDate.toLocaleDateString("en-ID", { month: "short", year: "2-digit" }),
-      assets: assetsAtDate, liabilities: liabilitiesAtDate,
-      netWorth: assetsAtDate - liabilitiesAtDate
-    });
+    const date = new Date(selectedYear, selectedMonthNumber - 1 - offset, 1);
+    historyMonths.push(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`);
   }
+  const netWorthMonths = PocketLedgerCore.calculateNetWorthHistory(accounts, journalEntries, historyMonths, localDate())
+    .map(item => ({ ...item, label: new Date(Number(item.key.slice(0,4)), Number(item.key.slice(5,7))-1, 1).toLocaleDateString("en-ID", { month: "short", year: "2-digit" }) }));
   const netWorthContainer = $("netWorthTrend");
   netWorthContainer.replaceChildren();
   const latestNetWorth = netWorthMonths[netWorthMonths.length - 1];
   const firstNetWorth = netWorthMonths.find(item => item.assets !== 0 || item.liabilities !== 0);
   setSensitiveText($("historicalNetWorthValue"), money(latestNetWorth.netWorth));
+  setSensitiveText($("netWorthAssets"), money(latestNetWorth.assets));
+  setSensitiveText($("netWorthLiabilities"), money(latestNetWorth.liabilities));
+  const previousNetWorth = netWorthMonths.length > 1 ? netWorthMonths[netWorthMonths.length - 2] : null;
+  if (previousNetWorth) {
+    const monthlyChange = latestNetWorth.netWorth - previousNetWorth.netWorth;
+    const prefix = monthlyChange > 0 ? "+" : monthlyChange < 0 ? "−" : "";
+    setSensitiveText($("netWorthMonthlyChange"), prefix + money(Math.abs(monthlyChange)));
+    $("netWorthMonthlyChange").classList.toggle("positive", monthlyChange > 0);
+    $("netWorthMonthlyChange").classList.toggle("negative", monthlyChange < 0);
+  } else {
+    $("netWorthMonthlyChange").textContent = "—";
+  }
   if (firstNetWorth && firstNetWorth.key !== latestNetWorth.key) {
     const change = latestNetWorth.netWorth - firstNetWorth.netWorth;
     const label = change > 0 ? "increased" : change < 0 ? "decreased" : "unchanged";
@@ -1430,7 +1423,7 @@ const ID_TRANSLATIONS = {
   "Income vs. expenses":"Pemasukan vs. pengeluaran","Total income":"Total pemasukan","Total expenses":"Total pengeluaran",
   "Net savings":"Tabungan bersih","Savings rate":"Rasio tabungan","Compared with previous month":"Dibandingkan bulan sebelumnya",
   "Spending by category":"Pengeluaran berdasarkan kategori","Six-month cash flow":"Arus kas enam bulan",
-  "Net worth over time":"Perkembangan kekayaan bersih","Latest recorded net worth":"Kekayaan bersih terakhir yang tercatat",
+  "Net worth over time":"Perkembangan kekayaan bersih", "Change vs. previous month":"Perubahan dibanding bulan lalu","Latest recorded net worth":"Kekayaan bersih terakhir yang tercatat",
   "Build your history by tracking account balances.":"Bangun riwayat dengan mencatat saldo akun.",
   "Reconstructed from account opening balances and dated ledger activity. Updating a past transaction or opening balance can restate historical values. Credit limits are never counted as debt; only outstanding liabilities are deducted.":"Dihitung dari saldo awal akun dan aktivitas buku besar berdasarkan tanggal. Perubahan transaksi lama atau saldo awal dapat mengubah riwayat. Limit kredit tidak dihitung sebagai utang; hanya kewajiban terutang yang dikurangkan.",
   "Budget":"Anggaran","Plan · Save · Stay on track":"Rencanakan · Menabung · Tetap terarah",
