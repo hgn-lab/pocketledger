@@ -151,6 +151,9 @@ test("PocketLedger browser workflows persist isolated account, ledger, transfer,
   // Reload verifies the same records survive a real browser navigation.
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.locator("#securityLock").waitFor({ state: "visible" });
+  await page.locator("#securityPin").fill("000000");
+  await page.locator("#securityLockSubmit").click();
+  await page.locator("#securityLockStatus").filter({ hasText: "Incorrect PIN" }).waitFor();
   await page.locator("#securityPin").fill("246810");
   await page.locator("#securityLockSubmit").click();
   await page.locator("#homeScreen.active").waitFor();
