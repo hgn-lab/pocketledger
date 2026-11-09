@@ -41,6 +41,47 @@
     throw new RangeError("Unsupported period: " + period);
   }
 
+  function calculateNetWorthHistory(accounts, entries, monthValues, todayValue) {
+    if (!Array.isArray(accounts) || !Array.isArray(entries) || !Array.isArray(monthValues) || !isValidDate(todayValue)) {
+      throw new TypeError("Net worth history requires account, entry, month arrays and a valid current date.");
+    }
+    const months = monthValues.map(month => {
+      if (!isValidMonth(month)) throw new RangeError("Net worth history months must use YYYY-MM.");
+      const cutoff = month + "-" + String(Math.min(daysInMonth(month), Number(todayValue.slice(8, 10)))).padStart(2, "0");
+      const monthEnd = month + "-" + String(daysInMonth(month)).padStart(2, "0");
+      return { key: month, cutoff: monthEnd > todayValue ? todayValue : monthEnd };
+    });
+    const preparedAccounts = accounts.map(account => {
+      const openingDate = account.openingBalanceDate || (account.createdAt || "").slice(0, 10);
+      const openingBalance = Number(account.openingBalance || 0);
+      if (!account || !isValidDate(openingDate) || !Number.isSafeInteger(openingBalance)) {
+        return { account, openingDate: null, openingBalance: 0 };
+      }
+      return { account, openingDate, openingBalance };
+    });
+    const movements = new Map();
+    for (const entry of entries) {
+      if (!entry || !isValidDate(entry.date) || !Number.isSafeInteger(Number(entry.balanceDelta))) continue;
+      const key = String(entry.accountId);
+      movements.set(key, [...(movements.get(key) || []), entry]);
+    }
+    return months.map(({ key, cutoff }) => {
+      let assets = 0, liabilities = 0;
+      for (const { account, openingDate, openingBalance } of preparedAccounts) {
+        if (!openingDate || openingDate > cutoff) continue;
+        const movement = (movements.get(String(account.id)) || [])
+          .filter(entry => entry.date >= openingDate && entry.date <= cutoff)
+          .reduce((sum, entry) => sum + Number(entry.balanceDelta), 0);
+        const balance = openingBalance + movement;
+        if (!Number.isSafeInteger(balance)) throw new RangeError("Net worth balance exceeds the safe integer range.");
+        if (account.classification === "asset") assets += balance;
+        else if (account.classification === "liability") liabilities += balance;
+      }
+      if (!Number.isSafeInteger(assets) || !Number.isSafeInteger(liabilities)) throw new RangeError("Net worth total exceeds the safe integer range.");
+      return { key, cutoff, assets, liabilities, netWorth: assets - liabilities };
+    });
+  }
+
   function validAmount(value) {
     const amount = Number(value);
     return Number.isSafeInteger(amount) && amount >= 0 ? amount : 0;
@@ -215,5 +256,5 @@
     return true;
   }
 
-  return { validateBackupEnvelope, validateBackupData, isValidDate, isValidMonth, daysInMonth, getPeriodRange, sumAmounts, expenseRowsForMonth, categoryTotals, calculateBudgetMetrics, calculateGoalProgress, nextRecurringDate, calculateLedgerBalanceDelta, calculateAccountBalance, calculateCreditMetrics };
+  return { calculateNetWorthHistory, validateBackupEnvelope, validateBackupData, isValidDate, isValidMonth, daysInMonth, getPeriodRange, sumAmounts, expenseRowsForMonth, categoryTotals, calculateBudgetMetrics, calculateGoalProgress, nextRecurringDate, calculateLedgerBalanceDelta, calculateAccountBalance, calculateCreditMetrics };
 });
