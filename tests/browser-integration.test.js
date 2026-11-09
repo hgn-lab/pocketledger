@@ -97,7 +97,8 @@ test("PocketLedger browser workflows persist isolated account, ledger, transfer,
   await page.locator("#budgetMonth").fill("2026-11");
   await page.locator("#globalBudgetAmount").fill("5000000");
   await page.locator("#globalBudgetForm button[type=submit]").click();
-  await page.locator("#globalBudgetStatus").filter({ hasText: "saved successfully" }).waitFor();
+  await page.waitForFunction(() => document.querySelector("#globalBudgetStatus")?.textContent.trim().length > 0, null, { timeout: 10000 }).catch(async () => { throw new Error("Global budget status stayed blank; month=" + await page.locator("#budgetMonth").inputValue() + ", amountValid=" + await page.locator("#globalBudgetAmount").evaluate(el => el.validity.valid) + ", pageErrors=" + pageErrors.join(" | ")); });
+  assert.match(await page.locator("#globalBudgetStatus").textContent(), /saved successfully/i);
   await page.locator("#budgetCategory").selectOption("Food");
   await page.locator("#categoryBudgetAmount").fill("1000000");
   await page.locator("#categoryBudgetForm button[type=submit]").click();
