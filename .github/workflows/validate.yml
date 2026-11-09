@@ -58,7 +58,9 @@ jobs:
             ['transaction filters include all sort modes', ['newest','oldest','highest','lowest'].every(value => html.includes('value="' + value + '"'))],
             ['transaction filters are wired to rendering', fs.readFileSync('app.js', 'utf8').includes('function transactionFilterRows') && fs.readFileSync('app.js', 'utf8').includes('clearTransactionFilters')],
             ['transaction account filter is populated from local accounts', fs.readFileSync('app.js', 'utf8').includes('async function populateTransactionAccountFilter')],
-            ['service worker cache version refreshed', sw.includes('pocketledger-v49')]
+            ['transaction filters are collapsible and styled as compact card', html.includes('class="transaction-filter-card"') && css.includes('.transaction-filter-card>summary')],
+            ['cream app background is configured', css.includes('background: #f3f0e8;')],
+            ['service worker cache version refreshed', sw.includes('pocketledger-v50')]
           ];
           for (const [label, ok] of checks) console.log((ok ? 'PASS: ' : 'FAIL: ') + label);
           if (checks.some(([, ok]) => !ok)) process.exit(1);
