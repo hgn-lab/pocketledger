@@ -473,6 +473,15 @@
         <div id="archivedAccountList" class="archived-account-list"></div>
       </details>
     </section>
+    <section class="settings-card language-section">
+      <div><h3>Language / Bahasa</h3><p class="backup-intro">Choose the language used throughout PocketLedger.</p></div>
+      <label for="languageSelect">App language</label>
+      <select id="languageSelect" class="language-select"><option value="en">English</option><option value="id">Bahasa Indonesia</option></select>
+    </section>
+    <section class="settings-card terms-section">
+      <div><h3>Terms &amp; Conditions</h3><p class="backup-intro">Review the terms that explain how PocketLedger handles your data and what the app is—and is not—designed to do.</p></div>
+      <button id="viewTerms" class="secondary" type="button">View Terms &amp; Conditions</button>
+    </section>
     <section class="settings-card export-section">
       <div><h3>Export data</h3><p class="backup-intro">Download your transactions as a CSV file for spreadsheets and reporting.</p></div>
       <button id="export" class="secondary" type="button">Export CSV</button>
@@ -503,6 +512,34 @@
     <p class="settings-note">Your financial records stay on this device. No account or sign-in is required.</p>
   </section>
 
+  <dialog id="termsDialog" class="terms-dialog" aria-labelledby="termsTitle">
+    <div class="terms-dialog-content">
+      <p class="terms-eyebrow">POCKETLEDGER · TERMS</p>
+      <h2 id="termsTitle">Terms &amp; Conditions</h2>
+      <p id="termsIntro">Please read these terms before using PocketLedger.</p>
+      <div class="terms-scroll" id="termsBody">
+        <h3>1. Personal finance tool only</h3>
+        <p>PocketLedger is a personal record-keeping and budgeting tool. It is not a bank, financial institution, accounting service, tax adviser, investment adviser, or credit provider. It does not provide financial, legal, or tax advice.</p>
+        <h3>2. Local storage and privacy</h3>
+        <p>Your records are stored locally in this browser on this device. Sharing the app link does not share your records. Anyone with access to this device or the same browser profile may be able to access locally stored records. PocketLedger does not provide user accounts or cloud synchronization.</p>
+        <h3>3. Your responsibility for data and backups</h3>
+        <p>You are responsible for entering accurate information and keeping independent backups. Browser or device failure, storage cleanup, app/browser changes, or loss of the device may result in data loss. Create encrypted backups regularly and keep the backup password safe. PocketLedger cannot recover a forgotten backup password.</p>
+        <h3>4. Encrypted backup and restore</h3>
+        <p>Encrypted backups are protected by a password you choose. Anyone who has both the backup file and its password may be able to restore and read the included records. Restoring replaces the records in the current browser database. Verify the selected file and keep a separate backup before restoring.</p>
+        <h3>5. No guarantee of financial accuracy</h3>
+        <p>Calculations and reports depend on the information you enter and the app's current logic. You should independently verify balances, budgets, reports, transfers, and other results before relying on them for financial decisions.</p>
+        <h3>6. Availability and changes</h3>
+        <p>The app is provided as a personal-use tool without a guarantee of uninterrupted availability or error-free operation. Features may change. Keep backups before using updates or making major changes.</p>
+        <h3>7. Acceptable use</h3>
+        <p>Use PocketLedger lawfully and only for records you are authorized to manage. Do not treat it as a secure vault for passwords, banking credentials, or other highly sensitive authentication secrets.</p>
+        <h3>8. Acceptance</h3>
+        <p>By selecting “I agree and continue”, you confirm that you have read and understood these terms. If you do not agree, do not use PocketLedger.</p>
+      </div>
+      <label class="terms-consent"><input id="termsConsent" type="checkbox"><span>I have read and agree to the Terms &amp; Conditions.</span></label>
+      <div class="terms-actions"><button id="termsDecline" class="secondary" type="button">I do not agree</button><button id="termsAccept" class="primary" type="button" disabled>I agree and continue</button></div>
+      <p id="termsStatus" class="terms-status" role="status" aria-live="polite"></p>
+    </div>
+  </dialog>
   <dialog id="archiveConfirmDialog" class="archive-dialog">
     <div class="archive-dialog-content">
       <div class="archive-dialog-icon" aria-hidden="true">↗</div>
