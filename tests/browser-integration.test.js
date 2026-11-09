@@ -49,7 +49,6 @@ test("PocketLedger browser workflows persist isolated account, ledger, transfer,
   await page.locator("#accountForm button[type=submit]").click();
   await page.locator("#accountStatus").filter({ hasText: "Account added." }).waitFor();
 
-  await page.locator(".account-add-details").locator("summary").click();
   await page.locator("#accountName").fill("Test Bank");
   await page.locator("#accountType").selectOption("Bank");
   await page.locator("#accountClassification").selectOption("asset");
