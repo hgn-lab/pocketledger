@@ -14,6 +14,7 @@ const mime = {
 let server, browser, baseUrl;
 
 test("PocketLedger browser workflows persist isolated account, ledger, transfer, budget and goal data", { timeout: 90000 }, async t => {
+  t.after(async () => { if (browser) await browser.close().catch(() => {}); if (server?.listening) await new Promise(resolve => server.close(resolve)); });
   server = http.createServer((req, res) => {
     const pathname = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
     const target = path.resolve(root, "." + (pathname === "/" ? "/index.html" : pathname));
@@ -132,11 +133,15 @@ test("PocketLedger browser workflows persist isolated account, ledger, transfer,
   assert.equal(snapshot.transfers.length, 1);
   assert.equal(snapshot.budgets.length, 2);
   assert.equal(snapshot.savingsGoals.length, 1);
-  assert.equal(snapshot.journalEntries.filter(x => x.accountId).length, 3, "expense and transfer should create three account-side ledger rows");
+  assert.equal(snapshot.journalEntries.filter(x => x.accountId).length, 4, "opening balances, expense and transfer should create four account-side ledger rows");
   assert.equal(snapshot.transactions[0].accountId, cash.id);
   assert.equal(snapshot.transactions[0].amount, 150000);
   assert.equal(snapshot.transfers[0].amount, 100000);
   assert.equal(snapshot.savingsGoals[0].savedAmount, 100000);
+  const cashBalance = 1000000 + snapshot.journalEntries.filter(x => x.accountId === cash.id).reduce((sum, x) => sum + x.balanceDelta, 0);
+  const bankBalance = 200000 + snapshot.journalEntries.filter(x => x.accountId === bank.id).reduce((sum, x) => sum + x.balanceDelta, 0);
+  assert.equal(cashBalance, 750000, "cash should reflect expense and outgoing transfer");
+  assert.equal(bankBalance, 300000, "bank should reflect incoming transfer");
 
   // Reload verifies the same records survive a real browser navigation.
   await page.reload({ waitUntil: "domcontentloaded" });
@@ -160,6 +165,4 @@ test("PocketLedger browser workflows persist isolated account, ledger, transfer,
   assert.deepEqual(pageErrors, [], "browser should not report uncaught page errors");
 
   await context.close();
-  await browser.close();
-  await new Promise(resolve => server.close(resolve));
 });
