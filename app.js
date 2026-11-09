@@ -1381,6 +1381,139 @@ document.addEventListener("submit", event => {
   }
 }, true);
 
+
+// LANGUAGE SUPPORT — preference is local to this browser and does not touch financial records.
+const LANGUAGE_KEY = "pocketledgerLanguage";
+let appLanguage = "en";
+const ID_TRANSLATIONS = {
+  "PERSONAL FINANCE":"KEUANGAN PRIBADI","Settings":"Pengaturan","Private · Local-first":"Privat · Utamakan lokal",
+  "Financial accounts":"Akun keuangan","Total assets":"Total aset","Total liabilities":"Total kewajiban",
+  "Net worth":"Kekayaan bersih","Accounts":"Akun","Credit cards":"Kartu kredit","Liabilities":"Kewajiban",
+  "Your bank, cash, savings and investment accounts.":"Akun bank, uang tunai, tabungan, dan investasi Anda.",
+  "Add account":"Tambah akun","Account name":"Nama akun","Account type":"Jenis akun","Classification":"Klasifikasi",
+  "Credit limit (IDR)":"Limit kredit (IDR)","Enter credit limit":"Masukkan limit kredit","Statement day":"Tanggal cetak tagihan",
+  "Payment due day":"Tanggal jatuh tempo","Minimum payment (IDR)":"Pembayaran minimum (IDR)",
+  "Repayment account":"Akun pembayaran","Choose later":"Pilih nanti","Opening balance (IDR)":"Saldo awal (IDR)",
+  "For credit cards, enter the amount currently owed—not the credit limit. Only the outstanding amount is counted as a liability.":"Untuk kartu kredit, masukkan jumlah tagihan saat ini—bukan limit kredit. Hanya jumlah terutang yang dihitung sebagai kewajiban.",
+  "Opening balance date":"Tanggal saldo awal","Transfer between accounts":"Transfer antar akun",
+  "Transfers do not count as income or expenses. Paying a credit card reduces its outstanding liability.":"Transfer tidak dihitung sebagai pemasukan atau pengeluaran. Pembayaran kartu kredit mengurangi kewajiban terutang.",
+  "From account":"Dari akun","To account":"Ke akun","Choose account":"Pilih akun","Amount (IDR)":"Jumlah (IDR)",
+  "Date":"Tanggal","Note":"Catatan","Monthly card payment":"Pembayaran kartu bulanan","Save transfer":"Simpan transfer",
+  "Credit limits are purchasing capacity, not assets. Outstanding balances remain included in total liabilities and net worth.":"Limit kredit adalah kapasitas belanja, bukan aset. Saldo terutang tetap termasuk dalam total kewajiban dan kekayaan bersih.",
+  "Loan, mortgage and other liability balances are included in total liabilities and net worth.":"Saldo pinjaman, hipotek, dan kewajiban lainnya termasuk dalam total kewajiban dan kekayaan bersih.",
+  "Archived accounts":"Akun yang diarsipkan","Archived accounts are hidden from active lists and transfers. Restore one to use it again; its original ledger history stays intact.":"Akun yang diarsipkan disembunyikan dari daftar aktif dan transfer. Pulihkan untuk menggunakannya kembali; riwayat transaksinya tetap tersimpan.",
+  "Export data":"Ekspor data","Download your transactions as a CSV file for spreadsheets and reporting.":"Unduh transaksi dalam format CSV untuk spreadsheet dan pelaporan.",
+  "Export CSV":"Ekspor CSV","Secure backup":"Cadangan aman",
+  "Backup password":"Kata sandi cadangan","At least 12 characters":"Minimal 12 karakter",
+  "Use a strong password you can remember. PocketLedger cannot recover it if you lose it.":"Gunakan kata sandi kuat yang mudah Anda ingat. PocketLedger tidak dapat memulihkannya jika hilang.",
+  "Create encrypted backup":"Buat cadangan terenkripsi","Restore from backup file":"Pulihkan dari file cadangan",
+  "Reset test data":"Atur ulang data uji","Reset all PocketLedger data":"Hapus semua data PocketLedger",
+  "Your financial records stay on this device. No account or sign-in is required.":"Catatan keuangan Anda tersimpan di perangkat ini. Tidak diperlukan akun atau proses masuk.",
+  "Language / Bahasa":"Bahasa","Choose the language used throughout PocketLedger.":"Pilih bahasa yang digunakan di seluruh PocketLedger.",
+  "App language":"Bahasa aplikasi","Terms & Conditions":"Syarat & Ketentuan",
+  "View Terms & Conditions":"Lihat Syarat & Ketentuan","English":"Inggris","Bank":"Bank","Cash":"Tunai",
+  "E-wallet":"Dompet digital","Savings":"Tabungan","Investment":"Investasi","Property":"Properti",
+  "Vehicle":"Kendaraan","Credit card":"Kartu kredit","Personal loan":"Pinjaman pribadi","Mortgage":"Hipotek",
+  "Other liability":"Kewajiban lain","Asset":"Aset","Liability":"Kewajiban","Add account":"Tambah akun"
+};
+function translateValue(value) {
+  if (appLanguage !== "id" || !value) return value;
+  return ID_TRANSLATIONS[value] || value;
+}
+function translateNode(root = document.body) {
+  if (appLanguage !== "id") return;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(node => {
+    const original = node.nodeValue.trim();
+    if (!original) return;
+    const translated = ID_TRANSLATIONS[original];
+    if (translated) node.nodeValue = node.nodeValue.replace(original, translated);
+  });
+  root.querySelectorAll?.("[placeholder],[title],[aria-label]").forEach(element => {
+    for (const attribute of ["placeholder","title","aria-label"]) {
+      const value = element.getAttribute(attribute);
+      if (value && ID_TRANSLATIONS[value]) element.setAttribute(attribute, ID_TRANSLATIONS[value]);
+    }
+  });
+}
+function setAppLanguage(language) {
+  appLanguage = language === "id" ? "id" : "en";
+  try { localStorage.setItem(LANGUAGE_KEY, appLanguage); } catch (error) { console.warn("Could not save language preference.", error); }
+  if (appLanguage === "en") {
+    location.reload();
+    return;
+  }
+  translateNode();
+  const selector = $("languageSelect");
+  if (selector) selector.value = appLanguage;
+}
+function initializeLanguage() {
+  try { appLanguage = localStorage.getItem(LANGUAGE_KEY) === "id" ? "id" : "en"; } catch (error) { appLanguage = "en"; }
+  const selector = $("languageSelect");
+  if (selector) {
+    selector.value = appLanguage;
+    selector.addEventListener("change", () => setAppLanguage(selector.value));
+  }
+  if (appLanguage === "id") {
+    translateNode();
+    const observer = new MutationObserver(records => records.forEach(record => {
+      record.addedNodes.forEach(node => { if (node.nodeType === Node.ELEMENT_NODE) translateNode(node); });
+      if (record.type === "characterData") translateNode(record.target.parentElement || document.body);
+    }));
+    observer.observe(document.body, { childList:true, subtree:true, characterData:true });
+  }
+}
+
+// Terms must be accepted before the local finance database is opened.
+const TERMS_ACCEPTANCE_KEY = "pocketledgerTermsAccepted_v1";
+function openTermsDialog(isGate = false) {
+  const dialog = $("termsDialog");
+  $("termsConsent").checked = false;
+  $("termsAccept").disabled = true;
+  $("termsDecline").hidden = isGate;
+  $("termsStatus").textContent = "";
+  if (appLanguage === "id") {
+    $("termsTitle").textContent = "Syarat & Ketentuan";
+    $("termsIntro").textContent = "Harap baca syarat berikut sebelum menggunakan PocketLedger.";
+    $("termsConsent").querySelector("span").textContent = "Saya telah membaca dan menyetujui Syarat & Ketentuan.";
+    $("termsAccept").textContent = "Saya setuju dan lanjutkan";
+    $("termsDecline").textContent = "Saya tidak setuju";
+  }
+  if (!dialog.open) dialog.showModal();
+}
+function waitForTermsAcceptance() {
+  let accepted = false;
+  try { accepted = localStorage.getItem(TERMS_ACCEPTANCE_KEY) === "yes"; } catch (error) { console.warn("Terms acceptance storage unavailable.", error); }
+  if (accepted) return Promise.resolve(true);
+  return new Promise(resolve => {
+    openTermsDialog(true);
+    $("termsConsent").addEventListener("change", () => { $("termsAccept").disabled = !$("termsConsent").checked; });
+    $("termsAccept").addEventListener("click", () => {
+      if (!$("termsConsent").checked) return;
+      try { localStorage.setItem(TERMS_ACCEPTANCE_KEY, "yes"); } catch (error) { $("termsStatus").textContent = "Could not save acceptance on this device."; return; }
+      $("termsDialog").close();
+      resolve(true);
+    });
+    $("termsDecline").addEventListener("click", () => {
+      $("termsStatus").textContent = "You must agree to continue. PocketLedger will remain closed.";
+      resolve(false);
+    });
+    $("termsDialog").addEventListener("cancel", event => { event.preventDefault(); $("termsStatus").textContent = "Please agree to the terms or leave PocketLedger."; }, { once:true });
+  });
+}
+$("viewTerms").addEventListener("click", () => openTermsDialog(false));
+$("termsConsent").addEventListener("change", () => { $("termsAccept").disabled = !$("termsConsent").checked; });
+$("termsAccept").addEventListener("click", () => {
+  if (!$("termsConsent").checked) return;
+  try { localStorage.setItem(TERMS_ACCEPTANCE_KEY, "yes"); } catch (error) { $("termsStatus").textContent = "Could not save acceptance on this device."; return; }
+  $("termsDialog").close();
+});
+$("termsDecline").addEventListener("click", () => $("termsDialog").close());
+initializeLanguage();
+
+
 // SETTINGS SEGMENTED NAVIGATION
 document.querySelectorAll("[data-settings-tab]").forEach(button => {
   button.addEventListener("click", () => {
@@ -1760,6 +1893,8 @@ async function processDueRecurringTransactions(){const today=localDate(),transac
 
 (async () => {
   try {
+    const accepted = await waitForTermsAcceptance();
+    if (!accepted) return;
     db = await openDB();
     await processDueRecurringTransactions();
 
