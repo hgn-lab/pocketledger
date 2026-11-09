@@ -1653,28 +1653,16 @@ $("backupFile").addEventListener("change", async event => {
   }
   try {
     const envelope = JSON.parse(await file.text());
-    if (envelope.format !== BACKUP_FORMAT || envelope.version !== BACKUP_VERSION ||
-        envelope.cipher !== "AES-256-GCM" || envelope.kdf !== "PBKDF2-SHA-256") {
-      throw new Error("This file is not a supported PocketLedger backup.");
-    }
+    PocketLedgerCore.validateBackupEnvelope(envelope);
     const key = await deriveBackupKey(password, base64ToBytes(envelope.salt));
     const decrypted = await crypto.subtle.decrypt(
       { name: "AES-GCM", iv: base64ToBytes(envelope.iv) }, key, base64ToBytes(envelope.ciphertext)
     );
     const payload = JSON.parse(new TextDecoder().decode(decrypted));
-    if (payload.format !== BACKUP_FORMAT || payload.version !== BACKUP_VERSION ||
-        !payload.data || !BACKUP_STORES.every(name => Array.isArray(payload.data[name]))) {
+    if (payload.format !== BACKUP_FORMAT || payload.version !== BACKUP_VERSION) {
       throw new Error("Backup contents are incomplete or unsupported.");
     }
-    const seen=new Map();
-    for(const name of BACKUP_STORES){seen.set(name,new Set());for(const record of payload.data[name]){
-      if(!record||typeof record!=="object"||Array.isArray(record)||!("id" in record)||!["string","number"].includes(typeof record.id)||String(record.id).length===0)throw Error(`Backup contains an invalid ${name} record. No data was changed.`);
-      if(seen.get(name).has(String(record.id)))throw Error(`Backup contains duplicate IDs in ${name}. No data was changed.`);seen.get(name).add(String(record.id));
-      if(name==="transactions"&&(!["income","expense"].includes(record.type)||!Number.isSafeInteger(record.amount)||record.amount<=0||!PocketLedgerCore.isValidDate(record.date)||typeof record.description!=="string"))throw Error("Backup contains an invalid transaction. No data was changed.");
-      if(name==="journalEntries"&&(!Number.isSafeInteger(record.amount)||record.amount<0||!PocketLedgerCore.isValidDate(record.date)))throw Error("Backup contains an invalid ledger entry. No data was changed.");
-      if(name==="transfers"&&(!Number.isSafeInteger(record.amount)||record.amount<=0||record.fromAccountId===record.toAccountId||!PocketLedgerCore.isValidDate(record.date)))throw Error("Backup contains an invalid transfer. No data was changed.");
-      if(name==="accounts"&&(typeof record.name!=="string"||!["asset","liability"].includes(record.classification)||!Number.isSafeInteger(Number(record.openingBalance))))throw Error("Backup contains an invalid account. No data was changed.");
-    }}
+    PocketLedgerCore.validateBackupData(payload.data, BACKUP_STORES);
     const counts = BACKUP_STORES.map(name => `${name}: ${payload.data[name].length}`).join("\n");
     if (!confirm("Restore this backup?\n\nThis replaces the records currently stored in this browser with the records in the backup. Export a backup of current data first if you may need it.\n\n" + counts)) return;
     await atomicWrite(BACKUP_STORES, tx => {
