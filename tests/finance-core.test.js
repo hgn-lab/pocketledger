@@ -69,3 +69,26 @@ test("goal progress reports remaining amount and caps the visual percentage", ()
   assert.equal(overfunded.percent, 100);
   assert.equal(overfunded.isComplete, true);
 });
+
+
+test("monthly recurrence stays anchored to the original day across short months", () => {
+  assert.equal(core.nextRecurringDate("2026-01-31", "monthly"), "2026-02-28");
+  assert.equal(core.nextRecurringDate("2026-02-28", "monthly", "2026-01-31"), "2026-03-31");
+  assert.equal(core.nextRecurringDate("2026-03-31", "monthly", "2026-01-31"), "2026-04-30");
+  assert.equal(core.nextRecurringDate("2026-04-30", "monthly", "2026-01-31"), "2026-05-31");
+});
+
+test("yearly recurrence preserves leap-day anniversaries", () => {
+  assert.equal(core.nextRecurringDate("2024-02-29", "yearly"), "2025-02-28");
+  assert.equal(core.nextRecurringDate("2025-02-28", "yearly", "2024-02-29"), "2026-02-28");
+  assert.equal(core.nextRecurringDate("2027-02-28", "yearly", "2024-02-29"), "2028-02-29");
+});
+
+test("weekly recurrence advances by exactly seven calendar days", () => {
+  assert.equal(core.nextRecurringDate("2026-12-28", "weekly"), "2027-01-04");
+});
+
+test("recurrence rejects invalid dates and unsupported frequencies", () => {
+  assert.throws(() => core.nextRecurringDate("2026-02-30", "monthly"), RangeError);
+  assert.throws(() => core.nextRecurringDate("2026-02-28", "daily"), RangeError);
+});
