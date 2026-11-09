@@ -36,6 +36,10 @@ test("PocketLedger browser workflows persist isolated account, ledger, transfer,
   await page.locator("#termsDialog").waitFor({ state: "visible" });
   await page.locator("#termsConsent").check();
   await page.locator("#termsAccept").click();
+  await page.locator("#securityLock").waitFor({ state: "visible" });
+  await page.locator("#securityPin").fill("246810");
+  await page.locator("#securityPinConfirm").fill("246810");
+  await page.locator("#securityLockSubmit").click();
   await page.locator("#homeScreen.active").waitFor();
   await page.locator("#integrityStatus").filter({ hasText: "No structural issues detected." }).waitFor({ timeout: 15000 });
 
@@ -146,6 +150,9 @@ test("PocketLedger browser workflows persist isolated account, ledger, transfer,
 
   // Reload verifies the same records survive a real browser navigation.
   await page.reload({ waitUntil: "domcontentloaded" });
+  await page.locator("#securityLock").waitFor({ state: "visible" });
+  await page.locator("#securityPin").fill("246810");
+  await page.locator("#securityLockSubmit").click();
   await page.locator("#homeScreen.active").waitFor();
   const persisted = await page.evaluate(() => new Promise((resolve, reject) => {
     const request = indexedDB.open("PocketLedgerDB");
