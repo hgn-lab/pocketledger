@@ -1,5 +1,5 @@
 
-  "Search transactions":"Cari transaksi","Search description":"Cari deskripsi","All types":"Semua jenis","Expenses":"Pengeluaran","All categories":"Semua kategori","All accounts":"Semua akun","Unassigned":"Belum ditautkan","Sort by":"Urutkan","Newest first":"Terbaru","Oldest first":"Terlama","Highest amount":"Nominal tertinggi","Lowest amount":"Nominal terendah","From":"Dari tanggal","To":"Sampai tanggal","Clear filters":"Hapus filter","No transactions match these filters.":"Tidak ada transaksi yang cocok dengan filter.","items":"item",
+  "Type":"Jenis","Category":"Kategori","Account":"Akun",  "Search transactions":"Cari transaksi","Search description":"Cari deskripsi","All types":"Semua jenis","Expenses":"Pengeluaran","All categories":"Semua kategori","All accounts":"Semua akun","Unassigned":"Belum ditautkan","Sort by":"Urutkan","Newest first":"Terbaru","Oldest first":"Terlama","Highest amount":"Nominal tertinggi","Lowest amount":"Nominal terendah","From":"Dari tanggal","To":"Sampai tanggal","Clear filters":"Hapus filter","No transactions match these filters.":"Tidak ada transaksi yang cocok dengan filter.","items":"item",
 const $ = id => document.getElementById(id);
 
 let toastTimer;
@@ -442,6 +442,7 @@ function transactionFilterRows(rows){
  return filtered;
 }
 async function renderTransactions(){
+ await populateTransactionAccountFilter();
  const allRows=await all(),rows=transactionFilterRows(allRows);
  $("count").textContent=rows.length===allRows.length?`${rows.length} items`:`${rows.length} of ${allRows.length} items`;
  const list=$("list");list.replaceChildren();
