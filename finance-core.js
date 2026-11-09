@@ -86,11 +86,34 @@
     };
   }
 
+
+  // Anchor monthly/yearly recurrences to the original transaction date.
+  function nextRecurringDate(value, frequency, anchorDate = value) {
+    if (!isValidDate(value) || !isValidDate(anchorDate)) throw new RangeError("Recurring dates must be valid YYYY-MM-DD values.");
+    if (!["weekly", "monthly", "yearly"].includes(frequency)) throw new RangeError("Unsupported recurring frequency: " + frequency);
+    const [year, month, day] = value.split("-").map(Number);
+    const [, anchorMonth, anchorDay] = anchorDate.split("-").map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (frequency === "weekly") date.setUTCDate(date.getUTCDate() + 7);
+    else if (frequency === "monthly") {
+      const targetMonth = date.getUTCMonth() + 1;
+      const targetYear = date.getUTCFullYear() + Math.floor(targetMonth / 12);
+      const normalizedMonth = targetMonth % 12;
+      const lastDay = new Date(Date.UTC(targetYear, normalizedMonth + 1, 0)).getUTCDate();
+      date.setUTCFullYear(targetYear, normalizedMonth, Math.min(anchorDay, lastDay));
+    } else {
+      const targetYear = date.getUTCFullYear() + 1;
+      const lastDay = new Date(Date.UTC(targetYear, anchorMonth, 0)).getUTCDate();
+      date.setUTCFullYear(targetYear, anchorMonth - 1, Math.min(anchorDay, lastDay));
+    }
+    return date.toISOString().slice(0, 10);
+  }
+
   function calculateGoalProgress(savedValue, targetValue) {
     const saved = validAmount(savedValue);
     const target = Number.isSafeInteger(Number(targetValue)) && Number(targetValue) > 0 ? Number(targetValue) : 1;
     return { saved, target, remaining: Math.max(0, target - saved), percent: Math.min(100, saved / target * 100), isComplete: saved >= target };
   }
 
-  return { isValidDate, isValidMonth, daysInMonth, getPeriodRange, sumAmounts, expenseRowsForMonth, categoryTotals, calculateBudgetMetrics, calculateGoalProgress };
+  return { isValidDate, isValidMonth, daysInMonth, getPeriodRange, sumAmounts, expenseRowsForMonth, categoryTotals, calculateBudgetMetrics, calculateGoalProgress, nextRecurringDate };
 });
