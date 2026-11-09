@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "test": "node --test tests/*.test.js",
+    "test": "node --test tests/finance-core.test.js",
     "test:browser": "node --test tests/browser-integration.test.js"
   },
   "devDependencies": {
