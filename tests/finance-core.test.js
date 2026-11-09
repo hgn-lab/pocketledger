@@ -133,3 +133,26 @@ test("ledger movements reject invalid directions and non-positive amounts", () =
   assert.throws(() => core.calculateLedgerBalanceDelta("asset", "transfer", 10), RangeError);
   assert.throws(() => core.calculateLedgerBalanceDelta("liability", "increase", 0), RangeError);
 });
+
+test("backup envelope requires the supported encryption parameters and correctly sized keys", () => {
+  const envelope = { format: "pocketledger-encrypted-backup", version: 1, cipher: "AES-256-GCM", kdf: "PBKDF2-SHA-256", iterations: 310000, salt: "AAAAAAAAAAAAAAAAAAAAAA==", iv: "AAAAAAAAAAAAAAAA", ciphertext: "AAAAAAAAAAAAAAAAAAAAAAAA" };
+  assert.equal(core.validateBackupEnvelope(envelope), true);
+  assert.throws(() => core.validateBackupEnvelope({ ...envelope, iterations: 1000 }), RangeError);
+  assert.throws(() => core.validateBackupEnvelope({ ...envelope, iv: "short" }), RangeError);
+});
+
+test("backup payload validates all six stores and rejects malformed records before restore", () => {
+  const stores = ["transactions", "budgets", "accounts", "journalEntries", "transfers", "savingsGoals"];
+  const data = Object.fromEntries(stores.map(name => [name, []]));
+  data.transactions.push({ id: 1, type: "expense", amount: 25000, date: "2026-11-09", description: "Lunch" });
+  data.budgets.push({ id: "2026-11_Food", month: "2026-11", category: "Food", amount: 1000000 });
+  data.accounts.push({ id: "cash", name: "Cash", classification: "asset", openingBalance: 100000 });
+  data.journalEntries.push({ id: "je1", accountId: "cash", amount: 10000, balanceDelta: -10000, date: "2026-11-09" });
+  data.transfers.push({ id: "tr1", fromAccountId: "cash", toAccountId: "bank", amount: 10000, date: "2026-11-09" });
+  data.savingsGoals.push({ id: "goal1", name: "Emergency fund", targetAmount: 1000000, savedAmount: 250000 });
+  assert.equal(core.validateBackupData(data, stores), true);
+  assert.throws(() => core.validateBackupData({ ...data, budgets: [{ id: "bad", month: "2026-13", category: "Food", amount: 1000 }] }, stores), RangeError);
+  assert.throws(() => core.validateBackupData({ ...data, savingsGoals: [{ id: "bad", name: "", targetAmount: 0, savedAmount: -1 }] }, stores), RangeError);
+  assert.throws(() => core.validateBackupData({ ...data, accounts: [{ id: "cash" }, { id: "cash" }] }, stores), RangeError);
+  assert.throws(() => core.validateBackupData({ ...data, transfers: [] }, [...stores, "missingStore"]), RangeError);
+});
