@@ -141,8 +141,8 @@ test("backup envelope requires the supported encryption parameters and correctly
   assert.throws(() => core.validateBackupEnvelope({ ...envelope, iv: "short" }), RangeError);
 });
 
-test("backup payload validates all six stores and rejects malformed records before restore", () => {
-  const stores = ["transactions", "budgets", "accounts", "journalEntries", "transfers", "savingsGoals"];
+test("backup payload validates all seven stores including month-end snapshots before restore", () => {
+  const stores = ["transactions", "budgets", "accounts", "journalEntries", "transfers", "savingsGoals", "monthlySnapshots"];
   const data = Object.fromEntries(stores.map(name => [name, []]));
   data.transactions.push({ id: 1, type: "expense", amount: 25000, date: "2026-11-09", description: "Lunch" });
   data.budgets.push({ id: "2026-11_Food", month: "2026-11", category: "Food", amount: 1000000 });
@@ -150,7 +150,9 @@ test("backup payload validates all six stores and rejects malformed records befo
   data.journalEntries.push({ id: "je1", accountId: "cash", amount: 10000, balanceDelta: -10000, date: "2026-11-09" });
   data.transfers.push({ id: "tr1", fromAccountId: "cash", toAccountId: "bank", amount: 10000, date: "2026-11-09" });
   data.savingsGoals.push({ id: "goal1", name: "Emergency fund", targetAmount: 1000000, savedAmount: 250000 });
+  data.monthlySnapshots.push({ id: "2026-10#0", period: "2026-10", revision: 0, cutoff: "2026-10-31", capturedAt: "2026-10-31T16:59:00.000Z", timezone: "Asia/Jakarta", method: "scheduled-23:59", assets: 100000, liabilities: 25000, netWorth: 75000 });
   assert.equal(core.validateBackupData(data, stores), true);
+  assert.throws(() => core.validateBackupData({ ...data, monthlySnapshots: [{ ...data.monthlySnapshots[0], netWorth: 1 }] }, stores), RangeError);
   assert.throws(() => core.validateBackupData({ ...data, budgets: [{ id: "bad", month: "2026-13", category: "Food", amount: 1000 }] }, stores), RangeError);
   assert.throws(() => core.validateBackupData({ ...data, savingsGoals: [{ id: "bad", name: "", targetAmount: 0, savedAmount: -1 }] }, stores), RangeError);
   assert.throws(() => core.validateBackupData({ ...data, accounts: [{ id: "cash" }, { id: "cash" }] }, stores), RangeError);
