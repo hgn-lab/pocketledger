@@ -92,3 +92,44 @@ test("recurrence rejects invalid dates and unsupported frequencies", () => {
   assert.throws(() => core.nextRecurringDate("2026-02-30", "monthly"), RangeError);
   assert.throws(() => core.nextRecurringDate("2026-02-28", "daily"), RangeError);
 });
+
+
+test("asset and liability ledger movements use opposite balance signs", () => {
+  assert.equal(core.calculateLedgerBalanceDelta("asset", "increase", 125000), 125000);
+  assert.equal(core.calculateLedgerBalanceDelta("asset", "decrease", 125000), -125000);
+  assert.equal(core.calculateLedgerBalanceDelta("liability", "increase", 125000), -125000);
+  assert.equal(core.calculateLedgerBalanceDelta("liability", "decrease", 125000), 125000);
+});
+
+test("account balances combine opening balance with only that account's ledger movements", () => {
+  const entries = [
+    { accountId: "bank-a", balanceDelta: -25000 },
+    { accountId: "bank-b", balanceDelta: 90000 },
+    { accountId: "bank-a", balanceDelta: 10000 }
+  ];
+  assert.equal(core.calculateAccountBalance(500000, entries, "bank-a"), 485000);
+  assert.equal(core.calculateAccountBalance(0, entries, "bank-b"), 90000);
+});
+
+test("account balance rejects malformed movements and unsafe totals", () => {
+  assert.throws(() => core.calculateAccountBalance(-1, [], "a"), RangeError);
+  assert.throws(() => core.calculateAccountBalance(100, [{ accountId: "a", balanceDelta: 1.5 }], "a"), RangeError);
+  assert.throws(() => core.calculateAccountBalance(Number.MAX_SAFE_INTEGER, [{ accountId: "a", balanceDelta: 1 }], "a"), RangeError);
+});
+
+test("credit metrics expose available credit and over-limit status accurately", () => {
+  assert.deepEqual(core.calculateCreditMetrics(10000000, 2500000), {
+    limit: 10000000, outstanding: 2500000, availableCredit: 7500000,
+    utilizationPercent: 25, progressPercent: 25, isOverLimit: false
+  });
+  const over = core.calculateCreditMetrics(10000000, 10500000);
+  assert.equal(over.availableCredit, -500000);
+  assert.equal(over.progressPercent, 100);
+  assert.equal(over.isOverLimit, true);
+  assert.equal(core.calculateCreditMetrics(0, 0).utilizationPercent, 0);
+});
+
+test("ledger movements reject invalid directions and non-positive amounts", () => {
+  assert.throws(() => core.calculateLedgerBalanceDelta("asset", "transfer", 10), RangeError);
+  assert.throws(() => core.calculateLedgerBalanceDelta("liability", "increase", 0), RangeError);
+});
