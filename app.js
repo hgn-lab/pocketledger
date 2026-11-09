@@ -1386,36 +1386,178 @@ document.addEventListener("submit", event => {
 const LANGUAGE_KEY = "pocketledgerLanguage";
 let appLanguage = "en";
 const ID_TRANSLATIONS = {
-  "PERSONAL FINANCE":"KEUANGAN PRIBADI","Settings":"Pengaturan","Private · Local-first":"Privat · Utamakan lokal",
-  "Financial accounts":"Akun keuangan","Total assets":"Total aset","Total liabilities":"Total kewajiban",
-  "Net worth":"Kekayaan bersih","Accounts":"Akun","Credit cards":"Kartu kredit","Liabilities":"Kewajiban",
-  "Your bank, cash, savings and investment accounts.":"Akun bank, uang tunai, tabungan, dan investasi Anda.",
-  "Add account":"Tambah akun","Account name":"Nama akun","Account type":"Jenis akun","Classification":"Klasifikasi",
-  "Credit limit (IDR)":"Limit kredit (IDR)","Enter credit limit":"Masukkan limit kredit","Statement day":"Tanggal cetak tagihan",
+  "PERSONAL FINANCE":"KEUANGAN PRIBADI","Overview":"Ringkasan","Daily":"Harian","Monthly":"Bulanan","Yearly":"Tahunan",
+  "Hide":"Sembunyikan","Show":"Tampilkan","Income":"Pemasukan","Expenses":"Pengeluaran","Add expense":"Tambah pengeluaran",
+  "Record spending":"Catat pengeluaran","Add income":"Tambah pemasukan","Record money in":"Catat pemasukan",
+  "Account snapshot":"Ringkasan akun","Manage accounts":"Kelola akun","NET WORTH":"KEKAYAAN BERSIH",
+  "Assets minus liabilities":"Aset dikurangi kewajiban","Total assets":"Total aset","Total liabilities":"Total kewajiban",
+  "Recent activity":"Aktivitas terbaru","See all":"Lihat semua","Your recent transactions will appear here.":"Transaksi terbaru Anda akan muncul di sini.",
+  "Period insights":"Ringkasan periode","Financial insights":"Wawasan keuangan","Monthly closeout":"Ringkasan akhir bulan",
+  "A quick summary of the selected month. Transfers are excluded from income and expenses.":"Ringkasan singkat bulan yang dipilih. Transfer tidak dihitung sebagai pemasukan atau pengeluaran.",
+  "Income vs. expenses":"Pemasukan vs. pengeluaran","Total income":"Total pemasukan","Total expenses":"Total pengeluaran",
+  "Net savings":"Tabungan bersih","Savings rate":"Rasio tabungan","Compared with previous month":"Dibandingkan bulan sebelumnya",
+  "Spending by category":"Pengeluaran berdasarkan kategori","Six-month cash flow":"Arus kas enam bulan",
+  "Net worth over time":"Perkembangan kekayaan bersih","Latest recorded net worth":"Kekayaan bersih terakhir yang tercatat",
+  "Build your history by tracking account balances.":"Bangun riwayat dengan mencatat saldo akun.",
+  "Reconstructed from account opening balances and dated ledger activity. Updating a past transaction or opening balance can restate historical values. Credit limits are never counted as debt; only outstanding liabilities are deducted.":"Dihitung dari saldo awal akun dan aktivitas buku besar berdasarkan tanggal. Perubahan transaksi lama atau saldo awal dapat mengubah riwayat. Limit kredit tidak dihitung sebagai utang; hanya kewajiban terutang yang dikurangkan.",
+  "Budget":"Anggaran","Plan · Save · Stay on track":"Rencanakan · Menabung · Tetap terarah",
+  "To add or edit your spending limits, select":"Untuk menambah atau mengubah batas pengeluaran, pilih",
+  "Daily overview":"Ringkasan harian","Monthly overview":"Ringkasan bulanan","TOTAL BUDGET REMAINING":"SISA TOTAL ANGGARAN",
+  "Set your monthly budget to get started.":"Atur anggaran bulanan untuk memulai.",
+  "Set your monthly budget to track your spending.":"Atur anggaran bulanan untuk memantau pengeluaran.",
+  "0% used":"0% terpakai","0% remaining":"0% tersisa","Overall spending":"Total pengeluaran",
+  "Spent this month":"Pengeluaran bulan ini","Daily average":"Rata-rata harian","Monthly budget":"Anggaran bulanan",
+  "Total monthly budget (IDR)":"Total anggaran bulanan (IDR)","Save global budget":"Simpan anggaran keseluruhan",
+  "Category budgets":"Anggaran kategori","Category":"Kategori","Monthly limit (IDR)":"Batas bulanan (IDR)",
+  "Save category budget":"Simpan anggaran kategori","Savings goals":"Target tabungan","Create a savings goal":"Buat target tabungan",
+  "Goal name":"Nama target","Target amount (IDR)":"Jumlah target (IDR)","Already saved (IDR)":"Sudah ditabung (IDR)",
+  "Target date":"Tanggal target","Create savings goal":"Buat target tabungan","Debt overview":"Ringkasan utang",
+  "Outstanding balances":"Saldo terutang","Manage accounts & repayments":"Kelola akun & pembayaran",
+  "Edit account":"Edit akun","Close":"Tutup","Account name":"Nama akun","Account type":"Jenis akun",
+  "Classification":"Klasifikasi","Credit limit (IDR)":"Limit kredit (IDR)","Statement day":"Tanggal cetak tagihan",
   "Payment due day":"Tanggal jatuh tempo","Minimum payment (IDR)":"Pembayaran minimum (IDR)",
   "Repayment account":"Akun pembayaran","Choose later":"Pilih nanti","Opening balance (IDR)":"Saldo awal (IDR)",
-  "For credit cards, enter the amount currently owed—not the credit limit. Only the outstanding amount is counted as a liability.":"Untuk kartu kredit, masukkan jumlah tagihan saat ini—bukan limit kredit. Hanya jumlah terutang yang dihitung sebagai kewajiban.",
-  "Opening balance date":"Tanggal saldo awal","Transfer between accounts":"Transfer antar akun",
+  "Opening balance date":"Tanggal saldo awal","Save changes":"Simpan perubahan","Delete account":"Hapus akun",
+  "New transaction":"Transaksi baru","Expense":"Pengeluaran","Description":"Deskripsi","Groceries":"Belanja kebutuhan",
+  "Amount (IDR)":"Jumlah (IDR)","Date":"Tanggal","Pay from / deposit to":"Bayar dari / setorkan ke",
+  "Unassigned — excluded from account balances":"Belum ditetapkan — tidak dihitung dalam saldo akun",
+  "Repeat this transaction":"Ulangi transaksi ini","Repeat frequency":"Frekuensi pengulangan",
+  "Every week":"Setiap minggu","Every month":"Setiap bulan","Every year":"Setiap tahun",
+  "Entries are created on this device when you open PocketLedger. Nothing runs in the background while Safari is closed.":"Entri dibuat di perangkat ini saat Anda membuka PocketLedger. Tidak ada proses berjalan di latar belakang saat Safari ditutup.",
+  "Add transaction":"Tambah transaksi","Cancel editing":"Batalkan pengeditan","Transactions":"Transaksi",
+  "Home":"Beranda","Budgets":"Anggaran","Settings":"Pengaturan","Private · Local-first":"Privat · Utamakan penyimpanan lokal",
+  "Financial accounts":"Akun keuangan","IDR · Local only":"IDR · Hanya lokal","Accounts":"Akun","Credit cards":"Kartu kredit","Liabilities":"Kewajiban",
+  "Your bank, cash, savings and investment accounts.":"Akun bank, uang tunai, tabungan, dan investasi Anda.",
+  "Add account":"Tambah akun","BCA Main Account":"Akun Utama BCA","Bank":"Bank","Cash":"Tunai",
+  "E-wallet":"Dompet digital","Savings":"Tabungan","Investment":"Investasi","Property":"Properti","Vehicle":"Kendaraan",
+  "Personal loan":"Pinjaman pribadi","Mortgage":"Hipotek","Other liability":"Kewajiban lain","Asset":"Aset","Liability":"Kewajiban",
+  "Enter credit limit":"Masukkan limit kredit","Choose account":"Pilih akun","Note":"Catatan",
+  "Transfer between accounts":"Transfer antar akun",
   "Transfers do not count as income or expenses. Paying a credit card reduces its outstanding liability.":"Transfer tidak dihitung sebagai pemasukan atau pengeluaran. Pembayaran kartu kredit mengurangi kewajiban terutang.",
-  "From account":"Dari akun","To account":"Ke akun","Choose account":"Pilih akun","Amount (IDR)":"Jumlah (IDR)",
-  "Date":"Tanggal","Note":"Catatan","Monthly card payment":"Pembayaran kartu bulanan","Save transfer":"Simpan transfer",
+  "From account":"Dari akun","To account":"Ke akun","Monthly card payment":"Pembayaran kartu bulanan","Save transfer":"Simpan transfer",
   "Credit limits are purchasing capacity, not assets. Outstanding balances remain included in total liabilities and net worth.":"Limit kredit adalah kapasitas belanja, bukan aset. Saldo terutang tetap termasuk dalam total kewajiban dan kekayaan bersih.",
   "Loan, mortgage and other liability balances are included in total liabilities and net worth.":"Saldo pinjaman, hipotek, dan kewajiban lainnya termasuk dalam total kewajiban dan kekayaan bersih.",
-  "Archived accounts":"Akun yang diarsipkan","Archived accounts are hidden from active lists and transfers. Restore one to use it again; its original ledger history stays intact.":"Akun yang diarsipkan disembunyikan dari daftar aktif dan transfer. Pulihkan untuk menggunakannya kembali; riwayat transaksinya tetap tersimpan.",
+  "Archived accounts":"Akun yang diarsipkan",
+  "Archived accounts are hidden from active lists and transfers. Restore one to use it again; its original ledger history stays intact.":"Akun yang diarsipkan disembunyikan dari daftar aktif dan transfer. Pulihkan untuk menggunakannya kembali; riwayat transaksinya tetap tersimpan.",
   "Export data":"Ekspor data","Download your transactions as a CSV file for spreadsheets and reporting.":"Unduh transaksi dalam format CSV untuk spreadsheet dan pelaporan.",
-  "Export CSV":"Ekspor CSV","Secure backup":"Cadangan aman",
-  "Backup password":"Kata sandi cadangan","At least 12 characters":"Minimal 12 karakter",
-  "Use a strong password you can remember. PocketLedger cannot recover it if you lose it.":"Gunakan kata sandi kuat yang mudah Anda ingat. PocketLedger tidak dapat memulihkannya jika hilang.",
+  "Export CSV":"Ekspor CSV","Secure backup":"Cadangan aman","Backup password":"Kata sandi cadangan",
+  "At least 12 characters":"Minimal 12 karakter","Use a strong password you can remember. PocketLedger cannot recover it if you lose it.":"Gunakan kata sandi kuat yang mudah Anda ingat. PocketLedger tidak dapat memulihkannya jika hilang.",
   "Create encrypted backup":"Buat cadangan terenkripsi","Restore from backup file":"Pulihkan dari file cadangan",
   "Reset test data":"Atur ulang data uji","Reset all PocketLedger data":"Hapus semua data PocketLedger",
   "Your financial records stay on this device. No account or sign-in is required.":"Catatan keuangan Anda tersimpan di perangkat ini. Tidak diperlukan akun atau proses masuk.",
   "Language / Bahasa":"Bahasa","Choose the language used throughout PocketLedger.":"Pilih bahasa yang digunakan di seluruh PocketLedger.",
-  "App language":"Bahasa aplikasi","Terms & Conditions":"Syarat & Ketentuan",
-  "View Terms & Conditions":"Lihat Syarat & Ketentuan","English":"Inggris","Bank":"Bank","Cash":"Tunai",
-  "E-wallet":"Dompet digital","Savings":"Tabungan","Investment":"Investasi","Property":"Properti",
-  "Vehicle":"Kendaraan","Credit card":"Kartu kredit","Personal loan":"Pinjaman pribadi","Mortgage":"Hipotek",
-  "Other liability":"Kewajiban lain","Asset":"Aset","Liability":"Kewajiban","Add account":"Tambah akun"
+  "App language":"Bahasa aplikasi","English":"Inggris","Apply language":"Terapkan bahasa",
+  "Terms & Conditions":"Syarat & Ketentuan","View Terms & Conditions":"Lihat Syarat & Ketentuan",
+  "Please read these terms before using PocketLedger.":"Harap baca syarat berikut sebelum menggunakan PocketLedger.",
+  "No transactions yet.":"Belum ada transaksi.","No transactions yet. Add your first expense or income to get started.":"Belum ada transaksi. Tambahkan pengeluaran atau pemasukan pertama Anda untuk memulai.",
+  "No category budgets yet. Add your first category budget above.":"Belum ada anggaran kategori. Tambahkan anggaran kategori pertama Anda di atas.",
+  "No spending recorded for this day.":"Belum ada pengeluaran yang tercatat pada hari ini.",
+  "No spending recorded for this year.":"Belum ada pengeluaran yang tercatat pada tahun ini.",
+  "No spending recorded this month yet.":"Belum ada pengeluaran yang tercatat bulan ini.",
+  "No transactions recorded for this month yet.":"Belum ada transaksi yang tercatat bulan ini.",
+  "No archived accounts.":"Tidak ada akun yang diarsipkan.","Restore":"Pulihkan","Edit":"Edit","Delete":"Hapus","Remove":"Hapus",
+  "Account linked":"Terhubung ke akun","Unassigned":"Belum ditetapkan","Recurring":"Berulang","Recurring entry":"Entri berulang",
+  "Spent today":"Pengeluaran hari ini","Income today":"Pemasukan hari ini","Net today":"Neto hari ini",
+  "Annual spending":"Pengeluaran tahunan","Annual income":"Pemasukan tahunan","Net savings":"Tabungan bersih",
+  "Monthly avg. spending":"Rata-rata pengeluaran bulanan","Net cash flow":"Arus kas bersih",
+  "Current net worth":"Kekayaan bersih saat ini","No change":"Tidak ada perubahan","No prior data":"Belum ada data sebelumnya",
+  "Not enough income data":"Data pemasukan belum cukup","No expenses recorded this month. Keep tracking to build your spending history.":"Belum ada pengeluaran bulan ini. Terus catat untuk membangun riwayat pengeluaran.",
+  "History starts with your recorded opening balances.":"Riwayat dimulai dari saldo awal yang Anda catat.",
+  "No target date":"Tidak ada tanggal target","Goal reached":"Target tercapai","Add savings":"Tambah tabungan",
+  "Your savings goals will appear here. Start with an emergency fund or a future purchase.":"Target tabungan Anda akan muncul di sini. Mulailah dengan dana darurat atau rencana pembelian.",
+  "No active debts recorded. Add a credit card, loan or other liability in Settings to track it here.":"Belum ada utang aktif. Tambahkan kartu kredit, pinjaman, atau kewajiban lain di Pengaturan untuk memantaunya.",
+  "Total outstanding debt":"Total utang terutang",
+  "Hide financial amounts":"Sembunyikan nominal keuangan","Show financial amounts":"Tampilkan nominal keuangan",
+  "Could not save language preference.":"Tidak dapat menyimpan preferensi bahasa.",
+  "Transfer saved. Account balances updated.":"Transfer tersimpan. Saldo akun telah diperbarui.",
+  "Transfer saved.":"Transfer tersimpan.","Could not save transfer.":"Tidak dapat menyimpan transfer.",
+  "Edit cancelled.":"Pengeditan dibatalkan.","Enter a description, a positive whole-IDR amount, and a valid date.":"Masukkan deskripsi, jumlah IDR bilangan bulat positif, dan tanggal yang valid.",
+  "Choose an active account.":"Pilih akun yang aktif.","Income must be received into an asset account.":"Pemasukan harus diterima ke akun aset.",
+  "Only credit card accounts can be selected for an expense.":"Hanya akun kartu kredit yang dapat dipilih untuk pengeluaran.",
+  "This transaction no longer exists. Refresh and try again.":"Transaksi ini sudah tidak tersedia. Muat ulang dan coba lagi.",
+  "Edit the original recurring transaction to change its schedule.":"Edit transaksi berulang asli untuk mengubah jadwalnya.",
+  "Choose a valid recurring frequency.":"Pilih frekuensi pengulangan yang valid.",
+  "A very similar transaction already exists on this date. Save another one anyway?":"Transaksi yang sangat mirip sudah ada pada tanggal ini. Tetap simpan transaksi lain?",
+  "Transaction updated.":"Transaksi diperbarui.","Transaction saved on this device.":"Transaksi tersimpan di perangkat ini.",
+  "Could not save transaction.":"Tidak dapat menyimpan transaksi.","Please enter a valid monthly budget.":"Masukkan anggaran bulanan yang valid.",
+  "Global budget saved successfully.":"Anggaran keseluruhan berhasil disimpan.","Could not save the global budget.":"Tidak dapat menyimpan anggaran keseluruhan.",
+  "Please enter a valid category limit.":"Masukkan batas kategori yang valid.","Could not save the category budget.":"Tidak dapat menyimpan anggaran kategori.",
+  "Enter a valid positive amount.":"Masukkan jumlah positif yang valid.","That amount is too large to record safely.":"Jumlah tersebut terlalu besar untuk dicatat dengan aman.",
+  "Savings progress updated.":"Progres tabungan diperbarui.","Savings goal archived.":"Target tabungan diarsipkan.",
+  "Enter a goal name, a valid target and a non-negative saved amount.":"Masukkan nama target, jumlah target yang valid, dan jumlah tabungan yang tidak negatif.",
+  "Already saved cannot exceed the target amount.":"Jumlah yang sudah ditabung tidak boleh melebihi jumlah target.",
+  "Savings goal saved on this device.":"Target tabungan tersimpan di perangkat ini.","Savings goal created.":"Target tabungan dibuat.",
+  "Could not save this goal.":"Tidak dapat menyimpan target ini.","Account not found.":"Akun tidak ditemukan.",
+  "Account archived. Its history is preserved.":"Akun diarsipkan. Riwayatnya tetap tersimpan.",
+  "Account added successfully.":"Akun berhasil ditambahkan.","Could not save account.":"Tidak dapat menyimpan akun.",
+  "Enter an account name.":"Masukkan nama akun.","Enter a valid credit limit.":"Masukkan limit kredit yang valid.",
+  "Enter an account name and a valid non-negative opening balance.":"Masukkan nama akun dan saldo awal non-negatif yang valid.",
+  "Account added. Opening balance is now included in your account totals.":"Akun ditambahkan. Saldo awal kini termasuk dalam total akun Anda.",
+  "Choose two different accounts and enter a valid amount and date.":"Pilih dua akun yang berbeda dan masukkan jumlah serta tanggal yang valid.",
+  "Choose active accounts.":"Pilih akun yang aktif.","Transfers must start from an asset account. Use an asset account to pay a liability.":"Transfer harus berasal dari akun aset. Gunakan akun aset untuk membayar kewajiban.",
+  "Enter a valid transfer date and positive whole-IDR amount.":"Masukkan tanggal transfer yang valid dan jumlah IDR bilangan bulat positif.",
+  "An identical transfer already exists. Save another one anyway?":"Transfer yang sama sudah ada. Tetap simpan transfer lain?",
+  "Account transfer":"Transfer akun","Account archived, but screen refresh failed:":"Akun diarsipkan, tetapi layar gagal diperbarui:",
+  "Account archived. Refresh the page to update the list.":"Akun diarsipkan. Muat ulang halaman untuk memperbarui daftar.",
+  "Could not restore account.":"Tidak dapat memulihkan akun.","Restore failed.":"Pemulihan gagal.",
+  "Restore was cancelled.":"Pemulihan dibatalkan.","Account restore failed:":"Pemulihan akun gagal:",
+  "Account archive failed.":"Pengarsipan akun gagal.","Account archive was cancelled.":"Pengarsipan akun dibatalkan.",
+  "Could not archive account.":"Tidak dapat mengarsipkan akun.","Account could not be archived.":"Akun tidak dapat diarsipkan.",
+  "Account archive database error:":"Kesalahan database saat mengarsipkan akun:",
+  "Enter only what you currently owe on this card—not its credit limit. Net worth deducts this outstanding balance only.":"Masukkan hanya jumlah tagihan kartu saat ini—bukan limit kredit. Kekayaan bersih hanya mengurangi saldo terutang ini.",
+  "Enter the account balance on the opening date.":"Masukkan saldo akun pada tanggal saldo awal.",
+  "Type":"Jenis","Category":"Kategori","Amount":"Jumlah","CSV export is ready.":"File CSV siap diekspor.",
+  "Could not read backup data.":"Tidak dapat membaca data cadangan.","Backup snapshot was incomplete.":"Snapshot cadangan tidak lengkap.",
+  "Backup snapshot failed.":"Pembuatan snapshot cadangan gagal.","Backup snapshot was cancelled.":"Snapshot cadangan dibatalkan.",
+  "Use a backup password with at least 12 characters.":"Gunakan kata sandi cadangan minimal 12 karakter.",
+  "Secure encryption is unavailable in this browser. Update Safari and try again.":"Enkripsi aman tidak tersedia di browser ini. Perbarui Safari dan coba lagi.",
+  "Encrypted backup created.":"Cadangan terenkripsi berhasil dibuat.","Backup failed. Your existing records were not changed.":"Cadangan gagal dibuat. Catatan Anda yang ada tidak berubah.",
+  "This backup is larger than the 50 MB safety limit.":"Ukuran cadangan melebihi batas keamanan 50 MB.",
+  "Backup contents are incomplete or unsupported.":"Isi cadangan tidak lengkap atau tidak didukung.",
+  "Restore completed. All six data stores have been restored.":"Pemulihan selesai. Keenam penyimpanan data telah dipulihkan.",
+  "Backup restored successfully.":"Cadangan berhasil dipulihkan.","Could not decrypt this backup. Check the password and try again.":"Tidak dapat mendekripsi cadangan ini. Periksa kata sandi dan coba lagi.",
+  "Restore failed. Your existing records were not changed.":"Pemulihan gagal. Catatan Anda yang ada tidak berubah.",
+  "To confirm, type RESET. This permanently clears the six PocketLedger data stores.":"Untuk mengonfirmasi, ketik RESET. Tindakan ini akan menghapus permanen enam penyimpanan data PocketLedger.",
+  "Reset cancelled. No data was changed.":"Pengaturan ulang dibatalkan. Tidak ada data yang berubah.",
+  "PocketLedger data cleared in this browser. Your backup files and app settings were preserved.":"Data PocketLedger di browser ini telah dihapus. File cadangan dan pengaturan aplikasi tetap tersimpan.",
+  "PocketLedger test data cleared.":"Data uji PocketLedger telah dihapus.",
+  "Reset failed. Please reload and try again; existing records may remain.":"Pengaturan ulang gagal. Muat ulang dan coba lagi; data yang ada mungkin masih tersimpan.",
+  "Terms & Conditions":"Syarat & Ketentuan","Apply language":"Terapkan bahasa"
 };
+function translateValue(value) {
+  if (appLanguage !== "id" || !value) return value;
+  if (ID_TRANSLATIONS[value]) return ID_TRANSLATIONS[value];
+  const patterns = [
+    [/^(\\d+) items?$/, "$1 item"],
+    [/^(\\d+) active goals?$/, "$1 target aktif"],
+    [/^(\\d+) transactions?$/, "$1 transaksi"],
+    [/^(\\d+)% used$/, "$1% terpakai"],
+    [/^(\\d+)% remaining$/, "$1% tersisa"],
+    [/^Average daily spending$/, "Rata-rata pengeluaran harian"]
+  ];
+  for (const [pattern, replacement] of patterns) if (pattern.test(value)) return value.replace(pattern, replacement);
+  return value;
+}
+function translateNode(root = document.body) {
+  if (appLanguage !== "id" || !root) return;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(node => {
+    const original = node.nodeValue.trim();
+    if (!original) return;
+    const translated = translateValue(original);
+    if (translated !== original) node.nodeValue = node.nodeValue.replace(original, translated);
+  });
+  root.querySelectorAll?.("[placeholder],[title],[aria-label]").forEach(element => {
+    for (const attribute of ["placeholder","title","aria-label"]) {
+      const value = element.getAttribute(attribute);
+      const translated = translateValue(value);
+      if (value && translated !== value) element.setAttribute(attribute, translated);
+    }
+  });
+}
+
 function translateValue(value) {
   if (appLanguage !== "id" || !value) return value;
   return ID_TRANSLATIONS[value] || value;
@@ -1444,7 +1586,9 @@ function setAppLanguage(language) {
   location.reload();
 }
 function initializeLanguage() {
+  document.documentElement.lang = appLanguage === "id" ? "id" : "en";
   try { appLanguage = localStorage.getItem(LANGUAGE_KEY) === "id" ? "id" : "en"; } catch (error) { appLanguage = "en"; }
+  document.documentElement.lang = appLanguage === "id" ? "id" : "en";
   const selector = $("languageSelect");
   if (selector) {
     selector.value = appLanguage;
