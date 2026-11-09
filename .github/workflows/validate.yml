@@ -19,8 +19,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Install browser test dependencies
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
       - name: Run finance calculation tests
         run: npm test
+      - name: Run isolated browser integration tests
+        run: npm run test:browser
       - name: Check JavaScript syntax
         run: node --check app.js
       - name: Check direct launch and consolidated navigation
