@@ -1477,6 +1477,23 @@ function openTermsDialog(isGate = false) {
   if (appLanguage === "id") {
     $("termsTitle").textContent = "Syarat & Ketentuan";
     $("termsIntro").textContent = "Harap baca syarat berikut sebelum menggunakan PocketLedger.";
+    $("termsBody").innerHTML = `
+      <h3>1. Hanya alat pencatatan keuangan pribadi</h3>
+      <p>PocketLedger adalah alat pencatatan dan penganggaran keuangan pribadi. Aplikasi ini bukan bank, lembaga keuangan, layanan akuntansi, penasihat pajak, penasihat investasi, atau penyedia kredit. Aplikasi ini tidak memberikan nasihat keuangan, hukum, atau pajak.</p>
+      <h3>2. Penyimpanan lokal dan privasi</h3>
+      <p>Catatan Anda disimpan secara lokal di browser pada perangkat ini. Membagikan tautan aplikasi tidak membagikan catatan Anda. Siapa pun yang memiliki akses ke perangkat atau profil browser yang sama mungkin dapat mengakses catatan lokal. PocketLedger tidak menyediakan akun pengguna atau sinkronisasi cloud.</p>
+      <h3>3. Tanggung jawab atas data dan cadangan</h3>
+      <p>Anda bertanggung jawab memasukkan informasi yang akurat dan menyimpan cadangan secara mandiri. Kerusakan browser atau perangkat, pembersihan penyimpanan, perubahan aplikasi/browser, atau kehilangan perangkat dapat menyebabkan kehilangan data. Buat cadangan terenkripsi secara berkala dan simpan kata sandinya dengan aman. PocketLedger tidak dapat memulihkan kata sandi cadangan yang terlupa.</p>
+      <h3>4. Cadangan terenkripsi dan pemulihan</h3>
+      <p>Cadangan terenkripsi dilindungi dengan kata sandi pilihan Anda. Siapa pun yang memiliki file cadangan dan kata sandinya mungkin dapat memulihkan dan membaca catatan di dalamnya. Pemulihan akan menggantikan catatan pada database browser saat ini. Periksa file yang dipilih dan simpan cadangan terpisah sebelum memulihkan.</p>
+      <h3>5. Tidak ada jaminan keakuratan keuangan</h3>
+      <p>Perhitungan dan laporan bergantung pada informasi yang Anda masukkan serta logika aplikasi saat ini. Verifikasi secara mandiri saldo, anggaran, laporan, transfer, dan hasil lainnya sebelum mengandalkannya untuk keputusan keuangan.</p>
+      <h3>6. Ketersediaan dan perubahan</h3>
+      <p>Aplikasi disediakan sebagai alat penggunaan pribadi tanpa jaminan ketersediaan tanpa gangguan atau bebas kesalahan. Fitur dapat berubah. Simpan cadangan sebelum menggunakan pembaruan atau melakukan perubahan besar.</p>
+      <h3>7. Penggunaan yang diperbolehkan</h3>
+      <p>Gunakan PocketLedger secara sah dan hanya untuk catatan yang berhak Anda kelola. Jangan gunakan aplikasi ini sebagai brankas untuk kata sandi, kredensial perbankan, atau rahasia autentikasi yang sangat sensitif.</p>
+      <h3>8. Persetujuan</h3>
+      <p>Dengan memilih “Saya setuju dan lanjutkan”, Anda menyatakan telah membaca dan memahami syarat ini. Jika tidak setuju, jangan gunakan PocketLedger.</p>`;
     $("termsConsent").querySelector("span").textContent = "Saya telah membaca dan menyetujui Syarat & Ketentuan.";
     $("termsAccept").textContent = "Saya setuju dan lanjutkan";
     $("termsDecline").textContent = "Saya tidak setuju";
