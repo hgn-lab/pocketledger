@@ -159,5 +159,46 @@
     return { saved, target, remaining: Math.max(0, target - saved), percent: Math.min(100, saved / target * 100), isComplete: saved >= target };
   }
 
-  return { isValidDate, isValidMonth, daysInMonth, getPeriodRange, sumAmounts, expenseRowsForMonth, categoryTotals, calculateBudgetMetrics, calculateGoalProgress, nextRecurringDate, calculateLedgerBalanceDelta, calculateAccountBalance, calculateCreditMetrics };
+
+  function validateBackupEnvelope(envelope) {
+    if (!envelope || typeof envelope !== "object" || Array.isArray(envelope) ||
+        envelope.format !== "pocketledger-encrypted-backup" || envelope.version !== 1 ||
+        envelope.cipher !== "AES-256-GCM" || envelope.kdf !== "PBKDF2-SHA-256" ||
+        envelope.iterations !== 310000 ||
+        typeof envelope.salt !== "string" || !/^[A-Za-z0-9+/]{22}==$/.test(envelope.salt) ||
+        typeof envelope.iv !== "string" || !/^[A-Za-z0-9+/]{16}$/.test(envelope.iv) ||
+        typeof envelope.ciphertext !== "string" || envelope.ciphertext.length < 24 ||
+        !/^[A-Za-z0-9+/]+={0,2}$/.test(envelope.ciphertext)) {
+      throw new RangeError("Backup file metadata is invalid or unsupported.");
+    }
+    return true;
+  }
+
+  function validateBackupData(data, storeNames) {
+    if (!data || typeof data !== "object" || Array.isArray(data) ||
+        !Array.isArray(storeNames) || !storeNames.length ||
+        !storeNames.every(name => Array.isArray(data[name]))) {
+      throw new RangeError("Backup contents are incomplete or unsupported.");
+    }
+    for (const name of storeNames) {
+      const ids = new Set();
+      for (const record of data[name]) {
+        if (!record || typeof record !== "object" || Array.isArray(record) ||
+            !("id" in record) || !["string", "number"].includes(typeof record.id) ||
+            String(record.id).length === 0 || ids.has(String(record.id))) {
+          throw new RangeError("Backup contains an invalid or duplicate record in " + name + ".");
+        }
+        ids.add(String(record.id));
+        if (name === "transactions" && (! ["income", "expense"].includes(record.type) || !Number.isSafeInteger(record.amount) || record.amount <= 0 || !isValidDate(record.date) || typeof record.description !== "string")) throw new RangeError("Backup contains an invalid transaction.");
+        if (name === "budgets" && (!isValidMonth(record.month) || typeof record.category !== "string" || !record.category.trim() || !Number.isSafeInteger(record.amount) || record.amount <= 0)) throw new RangeError("Backup contains an invalid budget.");
+        if (name === "accounts" && (typeof record.name !== "string" || !record.name.trim() || !["asset", "liability"].includes(record.classification) || !Number.isSafeInteger(Number(record.openingBalance)) || Number(record.openingBalance) < 0)) throw new RangeError("Backup contains an invalid account.");
+        if (name === "journalEntries" && (!Number.isSafeInteger(record.amount) || record.amount < 0 || !isValidDate(record.date) || typeof record.accountId !== "string" || !record.accountId || !Number.isSafeInteger(Number(record.balanceDelta || 0)))) throw new RangeError("Backup contains an invalid ledger entry.");
+        if (name === "transfers" && (!Number.isSafeInteger(record.amount) || record.amount <= 0 || typeof record.fromAccountId !== "string" || typeof record.toAccountId !== "string" || record.fromAccountId === record.toAccountId || !isValidDate(record.date))) throw new RangeError("Backup contains an invalid transfer.");
+        if (name === "savingsGoals" && (typeof record.name !== "string" || !record.name.trim() || !Number.isSafeInteger(Number(record.targetAmount)) || Number(record.targetAmount) <= 0 || !Number.isSafeInteger(Number(record.savedAmount || 0)) || Number(record.savedAmount || 0) < 0 || (record.targetDate && !isValidDate(record.targetDate)))) throw new RangeError("Backup contains an invalid savings goal.");
+      }
+    }
+    return true;
+  }
+
+  return { validateBackupEnvelope, validateBackupData, isValidDate, isValidMonth, daysInMonth, getPeriodRange, sumAmounts, expenseRowsForMonth, categoryTotals, calculateBudgetMetrics, calculateGoalProgress, nextRecurringDate, calculateLedgerBalanceDelta, calculateAccountBalance, calculateCreditMetrics };
 });
