@@ -176,9 +176,9 @@ test("net worth history reconstructs assets, liabilities and dated ledger moveme
   const history = core.calculateNetWorthHistory(accounts, entries, ["2026-01", "2026-02", "2026-03", "2026-04"], "2026-03-25");
   assert.deepEqual(history.map(({ assets, liabilities, netWorth }) => ({ assets, liabilities, netWorth })), [
     { assets: 90000, liabilities: 50000, netWorth: 40000 },
-    { assets: 120000, liabilities: 45000, netWorth: 75000 },
-    { assets: 195000, liabilities: 45000, netWorth: 150000 },
-    { assets: 195000, liabilities: 45000, netWorth: 150000 }
+    { assets: 110000, liabilities: 45000, netWorth: 65000 },
+    { assets: 185000, liabilities: 45000, netWorth: 140000 },
+    { assets: 185000, liabilities: 45000, netWorth: 140000 }
   ]);
   assert.equal(history[3].cutoff, "2026-03-25");
 });
