@@ -60,7 +60,10 @@ jobs:
             ['transaction account filter is populated from local accounts', fs.readFileSync('app.js', 'utf8').includes('async function populateTransactionAccountFilter')],
             ['transaction filters are collapsible and styled as compact card', html.includes('class="transaction-filter-card"') && css.includes('.transaction-filter-card>summary')],
             ['cream app background is configured', css.includes('background: #f3f0e8;')],
-            ['service worker cache version refreshed', sw.includes('pocketledger-v50')]
+            ['transaction search remains visible outside collapsed filters', html.includes('class="transaction-search-card"') && html.indexOf('id="transactionSearch"') < html.indexOf('class="transaction-filter-card"')],
+            ['secondary transaction filters are collapsed by default', html.includes('<details class="transaction-filter-card">') && !html.includes('<details open class="transaction-filter-card">')],
+            ['date filters use constrained responsive widths', css.includes('.transaction-filters input[type="date"]') && css.includes('max-width:100%')],
+            ['service worker cache version refreshed', sw.includes('pocketledger-v51')]
           ];
           for (const [label, ok] of checks) console.log((ok ? 'PASS: ' : 'FAIL: ') + label);
           if (checks.some(([, ok]) => !ok)) process.exit(1);
