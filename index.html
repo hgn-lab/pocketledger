@@ -526,6 +526,11 @@
       <select id="languageSelect" class="language-select"><option value="en">English</option><option value="id">Bahasa Indonesia</option></select>
       <button id="applyLanguage" class="primary" type="button">Apply language</button>
     </section>
+    <section class="settings-card security-settings">
+      <div><h3>App lock</h3><p class="backup-intro">Your six-digit PIN is stored as a salted hash on this device. PocketLedger locks when you leave the app and after five minutes of inactivity.</p></div>
+      <div class="security-actions"><button id="securityLockNow" class="secondary" type="button">Lock now</button><button id="securityChangePin" class="secondary" type="button">Change PIN</button></div>
+      <p class="account-note">If you forget your PIN, your financial records are not erased, but this screen cannot recover the PIN. Keep your encrypted backup and its password safe. This app lock is an access barrier, not full database encryption.</p>
+    </section>
     <section class="settings-card terms-section">
       <div><h3>Terms &amp; Conditions</h3><p class="backup-intro">Review the terms that explain how PocketLedger handles your data and what the app is—and is not—designed to do.</p></div>
       <button id="viewTerms" class="secondary" type="button">View Terms &amp; Conditions</button>
@@ -608,7 +613,25 @@
   <footer>Stored locally on this device. Export regularly.</footer>
 </main>
 
+  <section id="securityLock" class="security-lock" hidden aria-hidden="true">
+    <div class="security-lock-card">
+      <div class="security-lock-mark" aria-hidden="true">P<span>.</span></div>
+      <p class="security-lock-eyebrow">PERSONAL FINANCE</p>
+      <h1 id="securityLockTitle">Create your PIN</h1>
+      <p id="securityLockMessage">Set a six-digit PIN.</p>
+      <form id="securityLockForm" autocomplete="off">
+        <label class="security-pin-label" for="securityPin">Six-digit PIN</label>
+        <input id="securityPin" class="security-pin-input" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" minlength="6" autocomplete="new-password" aria-label="Six-digit PIN" required>
+        <input id="securityPinConfirm" class="security-pin-input" type="password" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" minlength="6" autocomplete="new-password" placeholder="Confirm PIN" aria-label="Confirm six-digit PIN" hidden>
+        <button id="securityLockSubmit" class="primary" type="submit">Set PIN</button>
+        <button id="securityLockCancel" class="secondary" type="button" hidden>Cancel</button>
+        <p id="securityLockStatus" class="security-lock-status" role="status" aria-live="polite"></p>
+      </form>
+      <p class="security-lock-footnote">Stored on this device only · No signup required</p>
+    </div>
+  </section>
 <script src="finance-core.js"></script>
+<script src="security-lock.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
