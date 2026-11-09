@@ -125,7 +125,7 @@ const categories = [
 
 function openDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open("PocketLedgerDB", 5);
+    const request = indexedDB.open("PocketLedgerDB", 6);
 
     request.onupgradeneeded = () => {
       const database = request.result;
@@ -159,6 +159,10 @@ function openDB() {
       if (!database.objectStoreNames.contains("savingsGoals")) {
         const goals = database.createObjectStore("savingsGoals", { keyPath: "id" });
         goals.createIndex("byCreatedAt", "createdAt", { unique: false });
+      }
+      if (!database.objectStoreNames.contains("monthlySnapshots")) {
+        const snapshots = database.createObjectStore("monthlySnapshots", { keyPath: "id" });
+        snapshots.createIndex("byPeriod", "period", { unique: false });
       }
     };
 
@@ -212,6 +216,7 @@ const allAccounts = () => operation("accounts", "readonly", s => s.getAll());
 const allJournalEntries = () => operation("journalEntries", "readonly", s => s.getAll());
 const allTransfers = () => operation("transfers", "readonly", s => s.getAll());
 const allSavingsGoals = () => operation("savingsGoals", "readonly", s => s.getAll());
+const allMonthlySnapshots = () => operation("monthlySnapshots", "readonly", s => s.getAll());
 const makeId = prefix => `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
 async function accountBalances() {
@@ -1882,8 +1887,8 @@ document.querySelectorAll(".period-btn").forEach(button => {
 
 // ENCRYPTED FULL-DATABASE BACKUP / RESTORE
 const BACKUP_FORMAT = "pocketledger-encrypted-backup";
-const BACKUP_VERSION = 1;
-const BACKUP_STORES = ["transactions", "budgets", "accounts", "journalEntries", "transfers", "savingsGoals"];
+const BACKUP_VERSION = 2;
+const BACKUP_STORES = ["transactions", "budgets", "accounts", "journalEntries", "transfers", "savingsGoals", "monthlySnapshots"];
 
 function bytesToBase64(bytes) {
   let binary = "";
@@ -1955,20 +1960,23 @@ $("backupFile").addEventListener("change", async event => {
       { name: "AES-GCM", iv: base64ToBytes(envelope.iv) }, key, base64ToBytes(envelope.ciphertext)
     );
     const payload = JSON.parse(new TextDecoder().decode(decrypted));
-    if (payload.format !== BACKUP_FORMAT || payload.version !== BACKUP_VERSION) {
+    if (payload.format !== BACKUP_FORMAT || ![1, 2].includes(payload.version)) {
       throw new Error("Backup contents are incomplete or unsupported.");
     }
-    PocketLedgerCore.validateBackupData(payload.data, BACKUP_STORES);
-    const counts = BACKUP_STORES.map(name => `${name}: ${payload.data[name].length}`).join("\n");
+    const restoreStores = payload.version === 1 ? BACKUP_STORES.filter(name => name !== "monthlySnapshots") : BACKUP_STORES;
+    if (payload.version === 1) payload.data.monthlySnapshots = [];
+    PocketLedgerCore.validateBackupData(payload.data, restoreStores);
+    const counts = restoreStores.map(name => `${name}: ${payload.data[name].length}`).join("\n");
     if (!confirm("Restore this backup?\n\nThis replaces the records currently stored in this browser with the records in the backup. Export a backup of current data first if you may need it.\n\n" + counts)) return;
     await atomicWrite(BACKUP_STORES, tx => {
-      for (const name of BACKUP_STORES) {
+      for (const name of restoreStores) {
         const store = tx.objectStore(name);
         store.clear();
         payload.data[name].forEach(record => store.put(record));
       }
+      if (payload.version === 1) tx.objectStore("monthlySnapshots").clear();
     });
-    status.textContent = "Restore completed. All six data stores have been restored.";
+    status.textContent = "Restore completed. Financial records and available snapshots have been restored.";
     showToast("Backup restored successfully.");
     await refreshAll();
   } catch (error) {
@@ -2052,6 +2060,66 @@ $("export").onclick = async () => {
 };
 
 async function processDueRecurringTransactions(){const today=localDate(),transactions=await all(),accounts=await allAccounts(),sources=transactions.filter(x=>x.recurringRule?.active&&x.recurringRule?.nextDate&&!x.recurringSourceId);for(const source of sources){let nextDate=source.recurringRule.nextDate,generated=0;while(nextDate<=today&&generated<120){if(!transactions.some(x=>x.recurringSourceId===source.id&&x.date===nextDate)){const account=source.accountId?accounts.find(a=>a.id===source.accountId&&a.active!==false):null;if(source.accountId&&!account)break;const occurrence={...source,date:nextDate,recurringSourceId:source.id,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};delete occurrence.id;delete occurrence.recurringRule;await atomicWrite(["transactions","journalEntries"],tx=>{const req=tx.objectStore("transactions").add(occurrence);req.onsuccess=()=>makeTransactionLedgerRows(occurrence,account,req.result).forEach(x=>tx.objectStore("journalEntries").add(x));});}nextDate=PocketLedgerCore.nextRecurringDate(nextDate,source.recurringRule.frequency,source.date);generated++;}if(nextDate!==source.recurringRule.nextDate){source.recurringRule={...source.recurringRule,nextDate};await operation("transactions","readwrite",s=>s.put(source));}}}
+
+function jakartaDateKey(date=new Date()){
+  const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Jakarta",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(date);
+  const p=Object.fromEntries(parts.filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));
+  return p.year+"-"+p.month+"-"+p.day;
+}
+function monthEndKey(month){return month+"-"+String(PocketLedgerCore.daysInMonth(month)).padStart(2,"0");}
+function monthCloseInstant(month){const [y,m]=month.split("-").map(Number);return Date.UTC(y,m,0,16,59,0);}
+async function captureMonthlySnapshot(method,period){
+  const old=(await allMonthlySnapshots()).find(x=>x.period===period&&x.revision===0);
+  if(old)return old;
+  const cutoff=monthEndKey(period),[accounts,entries]=await Promise.all([allAccounts(),allJournalEntries()]);
+  const totals=PocketLedgerCore.calculateNetWorthHistory(accounts,entries,[period],cutoff)[0];
+  const record={id:period+"#0",period,revision:0,cutoff,capturedAt:new Date().toISOString(),timezone:"Asia/Jakarta",scheduledClose:cutoff+" 23:59",method,assets:totals.assets,liabilities:totals.liabilities,netWorth:totals.netWorth,accountCount:accounts.length};
+  await operation("monthlySnapshots","readwrite",s=>s.add(record));
+  await renderPhase4();
+  return record;
+}
+let monthCloseTimer=null;
+async function checkMonthClose(){
+  const now=Date.now(),month=jakartaDateKey().slice(0,7),target=monthCloseInstant(month);
+  if(now>=target){await captureMonthlySnapshot(now<=target+300000?"scheduled-23:59":"late-reconstructed",month);scheduleMonthClose();}
+}
+function scheduleMonthClose(){
+  if(monthCloseTimer)clearTimeout(monthCloseTimer);
+  const month=jakartaDateKey().slice(0,7),delay=Math.max(1000,monthCloseInstant(month)-Date.now());
+  monthCloseTimer=setTimeout(()=>checkMonthClose().catch(console.error),Math.min(delay,2147480000));
+}
+function auditPocketLedger(accounts,entries,transactions,transfers,goals,snapshots){
+  const ids=new Set(accounts.map(x=>String(x.id))),issues=[];
+  entries.forEach(x=>{if(!ids.has(String(x.accountId)))issues.push("Ledger entry references a missing account");if(!PocketLedgerCore.isValidDate(x.date)||!Number.isSafeInteger(Number(x.balanceDelta)))issues.push("Invalid ledger entry date or movement");});
+  transfers.forEach(x=>{if(!ids.has(String(x.fromAccountId))||!ids.has(String(x.toAccountId)))issues.push("Transfer references a missing account");if(!Number.isSafeInteger(Number(x.amount))||x.amount<=0)issues.push("Invalid transfer amount");});
+  transactions.forEach(x=>{if(x.accountId!=null&&!ids.has(String(x.accountId)))issues.push("Transaction references a missing account");if(!PocketLedgerCore.isValidDate(x.date)||!Number.isSafeInteger(Number(x.amount))||x.amount<=0)issues.push("Invalid transaction date or amount");});
+  const periods=new Set();snapshots.forEach(x=>{if(periods.has(x.period))issues.push("Duplicate snapshot period");periods.add(x.period);if(!PocketLedgerCore.validateMonthlySnapshot(x))issues.push("Invalid monthly snapshot");});
+  goals.forEach(x=>{if(!Number.isSafeInteger(Number(x.targetAmount))||x.targetAmount<=0||!Number.isSafeInteger(Number(x.savedAmount||0))||Number(x.savedAmount||0)<0)issues.push("Invalid savings goal amounts");});
+  return [...new Set(issues)];
+}
+async function reconcileAccounts(){
+  const accounts=await accountBalances();if(!accounts.length){showToast("Add an account before reconciling.","error");return;}
+  const rows=[];
+  for(const a of accounts){const raw=prompt("Actual balance for "+a.name+" (IDR). Recorded: "+a.balance,String(a.balance));if(raw===null)return;const actual=Number(raw.trim());if(!Number.isSafeInteger(actual)){showToast("Enter a whole IDR amount.","error");return;}rows.push({name:a.name,difference:actual-a.balance});}
+  $("reconciliationResult").textContent=rows.map(x=>x.name+": "+(x.difference===0?"Matched":(x.difference>0?"+":"")+money(x.difference))).join(" · ");
+  showToast(rows.every(x=>x.difference===0)?"All accounts reconciled.":"Differences found.",rows.every(x=>x.difference===0)?"success":"error");
+}
+async function renderPhase4(){
+  const [snapshots,accounts,entries,transactions,transfers,goals]=await Promise.all([allMonthlySnapshots(),allAccounts(),allJournalEntries(),all(),allTransfers(),allSavingsGoals()]);
+  snapshots.sort((a,b)=>b.period.localeCompare(a.period));const list=$("monthlySnapshotList");list.replaceChildren();
+  if(!snapshots.length){const p=document.createElement("p");p.className="empty";p.textContent="First automatic close: 23:59 WIB on the final day of this month.";list.append(p);}
+  snapshots.slice(0,12).forEach(x=>{const row=document.createElement("div");row.className="phase4-row";const a=document.createElement("strong");a.textContent=x.period;const b=document.createElement("strong");b.textContent=money(x.netWorth);const c=document.createElement("small");c.textContent=x.method==="scheduled-23:59"?"Captured at scheduled close · WIB":"Late capture · reconstructed from dated ledger entries";row.append(a,b,c);list.append(row);});
+  const issues=auditPocketLedger(accounts,entries,transactions,transfers,goals,snapshots);
+  $("integrityStatus").textContent=issues.length?issues.length+" issue(s) detected.":"No structural issues detected.";
+  $("integrityDetails").textContent=issues.join(" · ")||"Accounts, transactions, ledger entries, transfers, goals and snapshots passed read-only checks.";
+  const net=accounts.reduce((s,a)=>s+(a.classification==="asset"?a.balance:-a.balance),0);
+  const milestones=[100000000,250000000,500000000,1000000000].filter(n=>net>=n).map(n=>"Net worth reached "+money(n));
+  goals.filter(g=>g.archived!==true&&Number(g.savedAmount||0)>=Number(g.targetAmount)).forEach(g=>milestones.push("Savings goal completed: "+g.name));
+  const target=$("milestoneList");target.replaceChildren();if(!milestones.length)milestones.push("Milestones appear here as your net worth grows and savings goals are completed.");
+  milestones.forEach(label=>{const p=document.createElement("p");p.className="phase4-milestone";p.textContent=label;target.append(p);});
+}
+$("reconcileAccounts").addEventListener("click",()=>reconcileAccounts().catch(e=>{console.error(e);showToast("Reconciliation failed.","error");}));
+
 // START APPLICATION
 
 (async () => {
@@ -2070,6 +2138,10 @@ async function processDueRecurringTransactions(){const today=localDate(),transac
     $("budgetYear").value = localDate().slice(0,4);
 $("analyticsMonth").value = currentMonth();
     await refreshAll();
+    await renderPhase4();
+    await checkMonthClose();
+    scheduleMonthClose();
+    document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkMonthClose().catch(console.error);});
 
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
