@@ -192,3 +192,7 @@ test("net worth history excludes activity before opening and after the current d
   assert.deepEqual(history.map(item => item.netWorth), [0, 1200, 1200]);
   assert.throws(() => core.calculateNetWorthHistory([], [], ["2026-13"], "2026-02-20"), RangeError);
 });
+
+
+test("monthly snapshots validate close metadata and arithmetic",()=>{const s={id:"2026-10#0",period:"2026-10",revision:0,cutoff:"2026-10-31",capturedAt:"2026-10-31T16:59:00.000Z",timezone:"Asia/Jakarta",method:"scheduled-23:59",assets:100000,liabilities:25000,netWorth:75000};assert.equal(core.validateMonthlySnapshot(s),true);assert.equal(core.validateMonthlySnapshot({...s,netWorth:1}),false);});
+test("backup envelope supports v1 and v2 while rejecting future versions",()=>{const e={format:"pocketledger-encrypted-backup",version:1,cipher:"AES-256-GCM",kdf:"PBKDF2-SHA-256",iterations:310000,salt:"AAAAAAAAAAAAAAAAAAAAAA==",iv:"AAAAAAAAAAAAAAAA",ciphertext:"AAAAAAAAAAAAAAAAAAAAAAAA"};assert.equal(core.validateBackupEnvelope(e),true);assert.equal(core.validateBackupEnvelope({...e,version:2}),true);assert.throws(()=>core.validateBackupEnvelope({...e,version:3}),RangeError);});
