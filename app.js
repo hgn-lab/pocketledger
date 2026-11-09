@@ -1568,9 +1568,9 @@ function initializeLanguage() {
   try { appLanguage = localStorage.getItem(LANGUAGE_KEY) === "id" ? "id" : "en"; } catch (error) { appLanguage = "en"; }
   document.documentElement.lang = appLanguage === "id" ? "id" : "en";
   const selector = $("languageSelect");
-  if (selector) {
-    selector.value = appLanguage;
-  }
+  if (selector) selector.value = appLanguage;
+  const termsSelector = $("termsLanguageSelect");
+  if (termsSelector) termsSelector.value = appLanguage;
   if (appLanguage === "id") {
     translateNode();
     const observer = new MutationObserver(records => records.forEach(record => {
@@ -1582,7 +1582,7 @@ function initializeLanguage() {
 }
 
 // Terms must be accepted before the local finance database is opened.
-const TERMS_ACCEPTANCE_KEY = "pocketledgerTermsAccepted_v2";
+const TERMS_ACCEPTANCE_KEY = "pocketledgerTermsAccepted_v3";
 function openTermsDialog(isGate = false) {
   const dialog = $("termsDialog");
   $("termsConsent").checked = false;
@@ -1636,6 +1636,10 @@ function waitForTermsAcceptance() {
   });
 }
 $("applyLanguage").addEventListener("click", () => setAppLanguage($("languageSelect").value));
+$("termsLanguageSelect").addEventListener("change", () => {
+  // Apply the choice before acceptance so the next first-run screen opens in that language.
+  setAppLanguage($("termsLanguageSelect").value);
+});
 $("viewTerms").addEventListener("click", () => openTermsDialog(false));
 $("termsConsent").addEventListener("change", () => { $("termsAccept").disabled = !$("termsConsent").checked; });
 $("termsAccept").addEventListener("click", () => {
