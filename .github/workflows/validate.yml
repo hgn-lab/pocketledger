@@ -50,9 +50,11 @@ jobs:
             ['Indonesian localization covers core navigation', ['Beranda','Transaksi','Anggaran','Pengaturan'].every(label => fs.readFileSync('app.js', 'utf8').includes(label))],
             ['Indonesian localization includes budget, transaction and backup workflows', ['Simpan anggaran keseluruhan','Tambah transaksi','Buat cadangan terenkripsi'].every(label => fs.readFileSync('app.js', 'utf8').includes(label))],
             ['dynamic Indonesian count labels are supported', fs.readFileSync('app.js', 'utf8').includes('target aktif') && fs.readFileSync('app.js', 'utf8').includes('item')],
-            ['terms acceptance version refreshed', fs.readFileSync('app.js', 'utf8').includes('pocketledgerTermsAccepted_v2')],
+            ['first-run terms language selector exists', html.includes('id="termsLanguageSelect"') && fs.readFileSync('app.js', 'utf8').includes('$("termsLanguageSelect").addEventListener')],
+            ['terms language follows saved app language', fs.readFileSync('app.js', 'utf8').includes('termsSelector.value = appLanguage')],
+            ['terms acceptance version refreshed', fs.readFileSync('app.js', 'utf8').includes('pocketledgerTermsAccepted_v3')],
             ['terms can be reopened from Settings', html.includes('id="viewTerms"')],
-            ['service worker cache version refreshed', sw.includes('pocketledger-v47')]
+            ['service worker cache version refreshed', sw.includes('pocketledger-v48')]
           ];
           for (const [label, ok] of checks) console.log((ok ? 'PASS: ' : 'FAIL: ') + label);
           if (checks.some(([, ok]) => !ok)) process.exit(1);
