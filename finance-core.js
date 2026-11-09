@@ -197,6 +197,21 @@
         if (name === "savingsGoals" && (typeof record.name !== "string" || !record.name.trim() || !Number.isSafeInteger(Number(record.targetAmount)) || Number(record.targetAmount) <= 0 || !Number.isSafeInteger(Number(record.savedAmount || 0)) || Number(record.savedAmount || 0) < 0 || (record.targetDate && !isValidDate(record.targetDate)))) throw new RangeError("Backup contains an invalid savings goal.");
       }
     }
+    if (storeNames.includes("accounts")) {
+      const accountIds = new Set(data.accounts.map(account => String(account.id)));
+      for (const transaction of data.transactions || []) {
+        if (transaction.accountId != null && !accountIds.has(String(transaction.accountId))) throw new RangeError("Backup transaction refers to a missing account.");
+      }
+      for (const entry of data.journalEntries || []) {
+        if (entry.accountId != null && !accountIds.has(String(entry.accountId))) throw new RangeError("Backup ledger entry refers to a missing account.");
+      }
+      for (const transfer of data.transfers || []) {
+        if (!accountIds.has(String(transfer.fromAccountId)) || !accountIds.has(String(transfer.toAccountId))) throw new RangeError("Backup transfer refers to a missing account.");
+      }
+      for (const account of data.accounts) {
+        if (account.paymentAccountId != null && !accountIds.has(String(account.paymentAccountId))) throw new RangeError("Backup account refers to a missing payment account.");
+      }
+    }
     return true;
   }
 
