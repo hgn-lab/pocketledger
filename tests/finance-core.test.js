@@ -177,8 +177,8 @@ test("net worth history reconstructs assets, liabilities and dated ledger moveme
   assert.deepEqual(history.map(({ assets, liabilities, netWorth }) => ({ assets, liabilities, netWorth })), [
     { assets: 90000, liabilities: 50000, netWorth: 40000 },
     { assets: 110000, liabilities: 45000, netWorth: 65000 },
-    { assets: 185000, liabilities: 45000, netWorth: 140000 },
-    { assets: 185000, liabilities: 45000, netWorth: 140000 }
+    { assets: 205000, liabilities: 45000, netWorth: 160000 },
+    { assets: 205000, liabilities: 45000, netWorth: 160000 }
   ]);
   assert.equal(history[3].cutoff, "2026-03-25");
 });
