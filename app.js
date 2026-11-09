@@ -1528,11 +1528,11 @@ function translateValue(value) {
   if (appLanguage !== "id" || !value) return value;
   if (ID_TRANSLATIONS[value]) return ID_TRANSLATIONS[value];
   const patterns = [
-    [/^(\\d+) items?$/, "$1 item"],
-    [/^(\\d+) active goals?$/, "$1 target aktif"],
-    [/^(\\d+) transactions?$/, "$1 transaksi"],
-    [/^(\\d+)% used$/, "$1% terpakai"],
-    [/^(\\d+)% remaining$/, "$1% tersisa"],
+    [/^(\d+) items?$/, "$1 item"],
+    [/^(\d+) active goals?$/, "$1 target aktif"],
+    [/^(\d+) transactions?$/, "$1 transaksi"],
+    [/^(\d+)% used$/, "$1% terpakai"],
+    [/^(\d+)% remaining$/, "$1% tersisa"],
     [/^Average daily spending$/, "Rata-rata pengeluaran harian"]
   ];
   for (const [pattern, replacement] of patterns) if (pattern.test(value)) return value.replace(pattern, replacement);
@@ -1558,28 +1558,6 @@ function translateNode(root = document.body) {
   });
 }
 
-function translateValue(value) {
-  if (appLanguage !== "id" || !value) return value;
-  return ID_TRANSLATIONS[value] || value;
-}
-function translateNode(root = document.body) {
-  if (appLanguage !== "id") return;
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  const nodes = [];
-  while (walker.nextNode()) nodes.push(walker.currentNode);
-  nodes.forEach(node => {
-    const original = node.nodeValue.trim();
-    if (!original) return;
-    const translated = ID_TRANSLATIONS[original];
-    if (translated) node.nodeValue = node.nodeValue.replace(original, translated);
-  });
-  root.querySelectorAll?.("[placeholder],[title],[aria-label]").forEach(element => {
-    for (const attribute of ["placeholder","title","aria-label"]) {
-      const value = element.getAttribute(attribute);
-      if (value && ID_TRANSLATIONS[value]) element.setAttribute(attribute, ID_TRANSLATIONS[value]);
-    }
-  });
-}
 function setAppLanguage(language) {
   appLanguage = language === "id" ? "id" : "en";
   try { localStorage.setItem(LANGUAGE_KEY, appLanguage); } catch (error) { console.warn("Could not save language preference.", error); }
