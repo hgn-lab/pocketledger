@@ -1,5 +1,3 @@
-
-  "Type":"Jenis","Category":"Kategori","Account":"Akun",  "Search transactions":"Cari transaksi","Search description":"Cari deskripsi","All types":"Semua jenis","Expenses":"Pengeluaran","All categories":"Semua kategori","All accounts":"Semua akun","Unassigned":"Belum ditautkan","Sort by":"Urutkan","Newest first":"Terbaru","Oldest first":"Terlama","Highest amount":"Nominal tertinggi","Lowest amount":"Nominal terendah","From":"Dari tanggal","To":"Sampai tanggal","Clear filters":"Hapus filter","No transactions match these filters.":"Tidak ada transaksi yang cocok dengan filter.","items":"item",
 const $ = id => document.getElementById(id);
 
 let toastTimer;
@@ -1420,6 +1418,7 @@ document.addEventListener("submit", event => {
 const LANGUAGE_KEY = "pocketledgerLanguage";
 let appLanguage = "en";
 const ID_TRANSLATIONS = {
+  "Type":"Jenis","Category":"Kategori","Account":"Akun","Search transactions":"Cari transaksi","Search description":"Cari deskripsi","All types":"Semua jenis","All categories":"Semua kategori","All accounts":"Semua akun","Unassigned":"Belum ditautkan","Sort by":"Urutkan","Newest first":"Terbaru","Oldest first":"Terlama","Highest amount":"Nominal tertinggi","Lowest amount":"Nominal terendah","From":"Dari tanggal","To":"Sampai tanggal","Clear filters":"Hapus filter","No transactions match these filters.":"Tidak ada transaksi yang cocok dengan filter.",
   "PERSONAL FINANCE":"KEUANGAN PRIBADI","Overview":"Ringkasan","Daily":"Harian","Monthly":"Bulanan","Yearly":"Tahunan",
   "Hide":"Sembunyikan","Show":"Tampilkan","Income":"Pemasukan","Expenses":"Pengeluaran","Add expense":"Tambah pengeluaran",
   "Record spending":"Catat pengeluaran","Add income":"Tambah pemasukan","Record money in":"Catat pemasukan",
