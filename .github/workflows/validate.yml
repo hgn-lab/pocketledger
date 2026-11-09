@@ -43,6 +43,10 @@ jobs:
             ['liabilities have their own list', html.includes('id="liabilityList"')],
             ['secure backup follows CSV export', html.indexOf('backup-section') > html.indexOf('id="export"')],
             ['service worker does not cache auth module', !sw.includes('"./auth.js"')],
+            ['first-run terms dialog exists', html.includes('id="termsDialog"') && html.includes('id="termsConsent"')],
+            ['terms acceptance gates database startup', fs.readFileSync('app.js', 'utf8').includes('await waitForTermsAcceptance()')],
+            ['language selector is in Settings', html.includes('id="languageSelect"') && html.includes('data-settings-panel="accounts"')],
+            ['terms can be reopened from Settings', html.includes('id="viewTerms"')],
             ['service worker cache version refreshed', sw.includes('pocketledger-v45')]
           ];
           for (const [label, ok] of checks) console.log((ok ? 'PASS: ' : 'FAIL: ') + label);
