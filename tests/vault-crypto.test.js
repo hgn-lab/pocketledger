@@ -19,8 +19,8 @@ test("vault key can be unlocked by PIN and recovery code", async () => {
   const encrypted = await vault.encryptRecord(created.masterKey, "transactions", record);
   assert.equal(encrypted.__pocketLedgerEncrypted, true);
   assert.equal(encrypted.amount, undefined);
-  assert.deepEqual(await vault.decryptRecord(byPin, "transactions", encrypted), record);
-  assert.deepEqual(await vault.decryptRecord(byRecovery, "transactions", encrypted), record);
+  assert.equal(JSON.stringify(await vault.decryptRecord(byPin, "transactions", encrypted)), JSON.stringify(record));
+  assert.equal(JSON.stringify(await vault.decryptRecord(byRecovery, "transactions", encrypted)), JSON.stringify(record));
 });
 
 test("wrong PIN, wrong recovery code, and cross-store substitution are rejected", async () => {
@@ -41,5 +41,5 @@ test("store encryption preserves record identity and round-trips all entries", a
   const rows = [{ id: 1, amount: 100 }, { id: 2, amount: 200 }];
   const encrypted = await vault.encryptStore(created.masterKey, "budgets", rows);
   assert.deepEqual(encrypted.map(x => x.id), [1, 2]);
-  assert.deepEqual(await vault.decryptStore(created.masterKey, "budgets", encrypted), rows);
+  assert.equal(JSON.stringify(await vault.decryptStore(created.masterKey, "budgets", encrypted)), JSON.stringify(rows));
 });
