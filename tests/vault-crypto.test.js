@@ -43,3 +43,36 @@ test("store encryption preserves record identity and round-trips all entries", a
   assert.deepEqual(encrypted.map(x => x.id), [1, 2]);
   assert.equal(JSON.stringify(await vault.decryptStore(created.masterKey, "budgets", encrypted)), JSON.stringify(rows));
 });
+
+test("recovery code is high entropy, grouped for transcription, and normalized safely", async () => {
+  const vault = loadVault();
+  const first = await vault.createVault("123456");
+  const second = await vault.createVault("123456");
+  assert.match(first.recoveryCode, /^(?:[0-9a-f]{4}-){15}[0-9a-f]{4}$/);
+  assert.notEqual(first.recoveryCode, second.recoveryCode);
+  const unlocked = await vault.unlockWithRecoveryCode(first.metadata, first.recoveryCode.toUpperCase().replaceAll("-", " "));
+  const envelope = await vault.encryptRecord(first.masterKey, "savingsGoals", { id: "goal-1", target: 900000 });
+  assert.equal(JSON.stringify(await vault.decryptRecord(unlocked, "savingsGoals", envelope)), JSON.stringify({ id: "goal-1", target: 900000 }));
+});
+
+test("ciphertext tampering and malformed vault metadata fail closed", async () => {
+  const vault = loadVault();
+  const created = await vault.createVault("654321");
+  const unlocked = await vault.unlockWithPin(created.metadata, "654321");
+  const envelope = await vault.encryptRecord(created.masterKey, "transactions", { id: "tx-2", amount: 75000 });
+  const ciphertext = envelope.ciphertext.split("");
+  ciphertext[Math.floor(ciphertext.length / 2)] = ciphertext[Math.floor(ciphertext.length / 2)] === "A" ? "B" : "A";
+  await assert.rejects(() => vault.decryptRecord(unlocked, "transactions", { ...envelope, ciphertext: ciphertext.join("") }));
+  await assert.rejects(() => vault.unlockWithPin({ ...created.metadata, version: 99 }, "654321"));
+  await assert.rejects(() => vault.unlockWithRecoveryCode(created.metadata, "g".repeat(64)));
+});
+
+test("record ciphertext is randomized even for identical records", async () => {
+  const vault = loadVault();
+  const created = await vault.createVault("987654");
+  const record = { id: "same-id", amount: 5000 };
+  const one = await vault.encryptRecord(created.masterKey, "transactions", record);
+  const two = await vault.encryptRecord(created.masterKey, "transactions", record);
+  assert.notEqual(one.iv, two.iv);
+  assert.notEqual(one.ciphertext, two.ciphertext);
+});
