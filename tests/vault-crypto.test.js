@@ -40,7 +40,7 @@ test("store encryption preserves record identity and round-trips all entries", a
   const created = await vault.createVault("112233");
   const rows = [{ id: 1, amount: 100 }, { id: 2, amount: 200 }];
   const encrypted = await vault.encryptStore(created.masterKey, "budgets", rows);
-  assert.deepEqual(encrypted.map(x => x.id), [1, 2]);
+  assert.equal(JSON.stringify(encrypted.map(x => x.id)), JSON.stringify([1, 2]));
   assert.equal(JSON.stringify(await vault.decryptStore(created.masterKey, "budgets", encrypted)), JSON.stringify(rows));
 });
 
