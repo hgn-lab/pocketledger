@@ -50,7 +50,7 @@
     return hex.match(/.{1,4}/g).join("-");
   }
   function normalizeRecoveryCode(value) {
-    const raw = String(value || "").replace(/[\\s-]/g, "").toLowerCase();
+    const raw = String(value || "").replace(/[\s-]/g, "").toLowerCase();
     if (!/^[0-9a-f]{64}$/.test(raw)) throw new Error("Recovery code must contain 64 hexadecimal characters.");
     return raw;
   }
