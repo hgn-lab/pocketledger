@@ -49,7 +49,8 @@
     return bytesToBase64(bytes).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "").match(/.{1,4}/g).join("-");
   }
   function normalizeRecoveryCode(value) {
-    return String(value || "").replace(/-/g, "").trim();
+    const raw = String(value || "").replace(/-/g, "").trim().replace(/-/g, "+").replace(/_/g, "/");
+    return raw + "=".repeat((4 - raw.length % 4) % 4);
   }
   async function createVault(pin) {
     if (!/^\d{6}$/.test(pin)) throw new Error("A six-digit PIN is required.");
