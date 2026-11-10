@@ -46,11 +46,13 @@
   }
   function createRecoveryCode() {
     const bytes = randomBytes(32);
-    return bytesToBase64(bytes).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "").match(/.{1,4}/g).join("-");
+    const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
+    return hex.match(/.{1,4}/g).join("-");
   }
   function normalizeRecoveryCode(value) {
-    const raw = String(value || "").replace(/-/g, "").trim().replace(/-/g, "+").replace(/_/g, "/");
-    return raw + "=".repeat((4 - raw.length % 4) % 4);
+    const raw = String(value || "").replace(/[\\s-]/g, "").toLowerCase();
+    if (!/^[0-9a-f]{64}$/.test(raw)) throw new Error("Recovery code must contain 64 hexadecimal characters.");
+    return raw;
   }
   async function createVault(pin) {
     if (!/^\d{6}$/.test(pin)) throw new Error("A six-digit PIN is required.");
