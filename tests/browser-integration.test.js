@@ -176,5 +176,52 @@ test("PocketLedger browser workflows persist isolated account, ledger, transfer,
   assert.equal(persisted.accounts.length, 2);
   assert.deepEqual(pageErrors, [], "browser should not report uncaught page errors");
 
+  // Exercise the separate encrypted repository without migrating or touching
+  // the legacy PocketLedgerDB created by the UI workflow above.
+  const vaultResult = await page.evaluate(async () => {
+    const repository = window.PocketLedgerEncryptedRepository;
+    const created = await repository.create("135790");
+    const fixtures = {
+      transactions: { id: 1, amount: 123456, description: "Private fixture" },
+      budgets: { id: "budget-1", amount: 500000 },
+      accounts: { id: "account-1", name: "Private account", balance: 900000 },
+      journalEntries: { id: "entry-1", accountId: "account-1", amount: 1000 },
+      transfers: { id: "transfer-1", amount: 2000 },
+      savingsGoals: { id: "goal-1", targetAmount: 3000 },
+      monthlySnapshots: { id: "snapshot-1", netWorth: 4000 }
+    };
+    for (const [store, record] of Object.entries(fixtures)) await repository.put(store, record);
+    const audit = await repository.audit();
+    const encrypted = await repository.inspectEncryptedStore("transactions");
+    const decrypted = await repository.read("transactions", 1);
+    repository.lock();
+    let lockedReadRejected = false;
+    try { await repository.readAll("transactions"); } catch { lockedReadRejected = true; }
+    await repository.unlockWithRecoveryCode(created.recoveryCode, "864209");
+    const afterRecovery = await repository.read("transactions", 1);
+    const rawDatabase = await new Promise((resolve, reject) => {
+      const request = indexedDB.open("PocketLedgerEncryptedDB");
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const db = request.result, tx = db.transaction("transactions", "readonly");
+        const get = tx.objectStore("transactions").getAll();
+        get.onsuccess = () => resolve(get.result);
+        get.onerror = () => reject(get.error);
+        tx.oncomplete = () => db.close();
+      };
+    });
+    repository.lock();
+    return { audit, encrypted, decrypted, lockedReadRejected, afterRecovery, rawDatabase };
+  });
+  assert.equal(vaultResult.audit.ok, true);
+  assert.equal(vaultResult.audit.stores.length, 7);
+  assert.equal(vaultResult.encrypted.length, 1);
+  assert.equal(vaultResult.encrypted[0].__pocketLedgerEncrypted, true);
+  assert.equal(vaultResult.encrypted[0].amount, undefined);
+  assert.equal(vaultResult.rawDatabase[0].description, undefined);
+  assert.equal(vaultResult.decrypted.amount, 123456);
+  assert.equal(vaultResult.lockedReadRejected, true);
+  assert.equal(vaultResult.afterRecovery.description, "Private fixture");
+
   await context.close();
 });
