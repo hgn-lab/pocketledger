@@ -199,44 +199,11 @@
     return rows;
   }
 
-  async function stageLegacyMigration(legacyDatabase) {
-    if (!legacyDatabase || typeof legacyDatabase.transaction !== "function") {
-      throw new Error("A legacy IndexedDB connection is required.");
-    }
-    requireUnlocked();
-    const snapshot = {};
-    for (const name of STORES) {
-      const tx = legacyDatabase.transaction(name, "readonly");
-      const done = transactionDone(tx);
-      snapshot[name] = await requestValue(tx.objectStore(name).getAll());
-      await done;
-    }
-    const counts = Object.fromEntries(STORES.map(name => [name, snapshot[name].length]));
-    const encrypted = {};
-    for (const name of STORES) encrypted[name] = await cryptoApi().encryptStore(masterKey, name, snapshot[name]);
 
-    const tx = database.transaction(STORES, "readwrite");
-    const done = transactionDone(tx);
-    for (const name of STORES) {
-      const store = tx.objectStore(name);
-      store.clear();
-      for (const row of encrypted[name]) store.put(row);
-    }
-    await done;
-
-    const verification = {};
-    for (const name of STORES) {
-      const actual = await readAll(name);
-      const canonical = rows => JSON.stringify([...rows].sort((a, b) => String(a.id).localeCompare(String(b.id))));
-      verification[name] = actual.length === counts[name] && canonical(actual) === canonical(snapshot[name]);
-      if (!verification[name]) throw new Error("Migration verification failed for " + name + ". Legacy data has not been changed.");
-    }
-    return { ok: true, counts, verification, legacyPreserved: true };
-  }
 
   window.PocketLedgerEncryptedRepository = Object.freeze({
     DB_NAME, STORES, create, unlockWithPin, unlockWithRecoveryCode,
     read, readAll, put, remove, batch, audit, lock,
-    inspectEncryptedStore, stageLegacyMigration
+    inspectEncryptedStore
   });
 })();
