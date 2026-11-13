@@ -76,6 +76,12 @@
     validateMetadata(metadata);
     return unwrapMasterKey(metadata.recoveryWrapper, normalizeRecoveryCode(recoveryCode), "recovery");
   }
+  async function rewrapWithPin(metadata, masterKey, newPin) {
+    validateMetadata(metadata);
+    if (!/^\\d{6}$/.test(String(newPin || ""))) throw new Error("A six-digit PIN is required.");
+    const pinWrapper = await wrapMasterKey(masterKey, newPin, "pin");
+    return { ...metadata, pinWrapper, updatedAt: new Date().toISOString() };
+  }
   function validateMetadata(metadata) {
     if (!metadata || metadata.version !== VERSION || metadata.cipher !== CIPHER || !metadata.pinWrapper || !metadata.recoveryWrapper) {
       throw new Error("Vault metadata is incomplete or unsupported.");
@@ -112,6 +118,6 @@
 
   window.PocketLedgerVaultCrypto = Object.freeze({
     VERSION, KDF, ITERATIONS, CIPHER, createVault, unlockWithPin, unlockWithRecoveryCode,
-    encryptRecord, decryptRecord, encryptStore, decryptStore, validateMetadata
+    encryptRecord, decryptRecord, encryptStore, decryptStore, validateMetadata, rewrapWithPin
   });
 })();
