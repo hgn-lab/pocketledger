@@ -42,7 +42,7 @@
       { name: "AES-GCM", iv: base64ToBytes(wrapped.iv), additionalData: encoder.encode("PocketLedger vault v1:" + purpose) },
       wrappingKey, base64ToBytes(wrapped.ciphertext)
     );
-    return crypto.subtle.importKey("raw", raw, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+    return crypto.subtle.importKey("raw", raw, { name: "AES-GCM" }, true, ["encrypt", "decrypt"]);
   }
   function createRecoveryCode() {
     const bytes = randomBytes(32);
