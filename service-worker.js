@@ -1,5 +1,5 @@
-const CACHE_NAME = "pocketledger-v56";
-const APP_FILES = ["./", "./index.html", "./styles.css", "./finance-core.js", "./app.js", "./security-lock.js", "./vault-crypto.js", "./manifest.webmanifest", "./icon.svg"];
+const CACHE_NAME = "pocketledger-v57";
+const APP_FILES = ["./", "./index.html", "./styles.css", "./finance-core.js", "./app.js", "./security-lock.js", "./vault-crypto.js", "./vault-repository.js", "./manifest.webmanifest", "./icon.svg"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_FILES)).then(() => self.skipWaiting()));
 });
