@@ -103,7 +103,7 @@
       if (pin !== confirmInput.value) { setError("The PINs do not match. Try again."); return; }
       try { await savePin(pin); }
       catch { setError("Could not save your PIN in this browser. Check Safari storage settings."); return; }
-      hide();
+      hide(); resetIdleTimer();
       if (mode === "setup" && resolveGate) { const done = resolveGate; resolveGate = null; done(true); }
       return;
     }
