@@ -33,3 +33,14 @@ test("encrypted repository envelope writes are prepared before opening write tra
   const transactionPosition = repository.indexOf('database.transaction(names, "readwrite")');
   assert.ok(cryptoPosition >= 0 && transactionPosition > cryptoPosition);
 });
+
+
+test("automatic lock supports only the documented 1, 5, 10, and 15 minute settings", () => {
+  const lock = fs.readFileSync(require.resolve("../security-lock.js"), "utf8");
+  for (const minutes of [1, 5, 10, 15]) {
+    assert.ok(lock.includes(String(minutes)), "missing timeout " + minutes);
+  }
+  assert.match(lock, /idleMinutes \* 60 \* 1000/);
+  assert.match(lock, /document\.addEventListener\("visibilitychange"/);
+  assert.match(html, /id="securityAutoLockMinutes"/);
+});
