@@ -2,6 +2,9 @@
   "use strict";
   const STORAGE_KEY = "pocketledgerLocalLock_v1";
   const ITERATIONS = 310000;
+  const IDLE_KEY = "pocketledgerAutoLockMinutes_v1";
+  const ALLOWED_IDLE_MINUTES = [1, 5, 10, 15];
+  let idleMinutes = 5;
   const $ = id => document.getElementById(id);
   const overlay = $("securityLock");
   const form = $("securityLockForm");
@@ -69,9 +72,25 @@
     show("unlock", "Welcome back", "Enter your six-digit PIN to open PocketLedger.", "Unlock");
     setError("");
   }
+  function loadIdlePreference() {
+    try {
+      const value = Number(localStorage.getItem(IDLE_KEY));
+      idleMinutes = ALLOWED_IDLE_MINUTES.includes(value) ? value : 5;
+    } catch { idleMinutes = 5; }
+    const control = $("securityAutoLockMinutes");
+    if (control) control.value = String(idleMinutes);
+  }
+  function setIdlePreference(value) {
+    const minutes = Number(value);
+    if (!ALLOWED_IDLE_MINUTES.includes(minutes)) throw new Error("Choose 1, 5, 10, or 15 minutes.");
+    idleMinutes = minutes;
+    try { localStorage.setItem(IDLE_KEY, String(minutes)); }
+    catch { throw new Error("Could not save the auto-lock preference in this browser."); }
+    resetIdleTimer();
+  }
   function resetIdleTimer() {
     clearTimeout(idleTimer);
-    if (overlay.hidden) idleTimer = setTimeout(lock, 5 * 60 * 1000);
+    if (overlay.hidden) idleTimer = setTimeout(lock, idleMinutes * 60 * 1000);
   }
   function markActivity() {
     if (overlay.hidden) resetIdleTimer();
@@ -84,7 +103,7 @@
       if (pin !== confirmInput.value) { setError("The PINs do not match. Try again."); return; }
       try { await savePin(pin); }
       catch { setError("Could not save your PIN in this browser. Check Safari storage settings."); return; }
-      hide();
+      hide(); resetIdleTimer();
       if (mode === "setup" && resolveGate) { const done = resolveGate; resolveGate = null; done(true); }
       return;
     }
@@ -114,6 +133,14 @@
     setError("");
   });
   $("securityLockNow").addEventListener("click", lock);
+  const idleControl = $("securityAutoLockMinutes");
+  if (idleControl) {
+    loadIdlePreference();
+    idleControl.addEventListener("change", () => {
+      try { setIdlePreference(idleControl.value); setError(""); }
+      catch (error) { loadIdlePreference(); setError(error.message); }
+    });
+  }
   document.addEventListener("pointerdown", markActivity, { passive: true });
   document.addEventListener("keydown", markActivity);
   document.addEventListener("visibilitychange", () => { if (document.hidden && overlay.hidden) lock(); else if (!document.hidden && overlay.hidden) resetIdleTimer(); });
@@ -128,6 +155,8 @@
         else lock();
       });
     },
-    lockNow: lock
+    lockNow: lock,
+    setAutoLockMinutes: setIdlePreference,
+    getAutoLockMinutes: () => idleMinutes
   };
 })();
