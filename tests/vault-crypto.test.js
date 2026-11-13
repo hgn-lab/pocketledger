@@ -76,3 +76,15 @@ test("record ciphertext is randomized even for identical records", async () => {
   assert.notEqual(one.iv, two.iv);
   assert.notEqual(one.ciphertext, two.ciphertext);
 });
+
+
+test("recovery can rewrap the same master key with a new PIN", async () => {
+  const vault = loadVault();
+  const created = await vault.createVault("246810");
+  const recoveredKey = await vault.unlockWithRecoveryCode(created.metadata, created.recoveryCode);
+  const updated = await vault.rewrapWithPin(created.metadata, recoveredKey, "864209");
+  const unlocked = await vault.unlockWithPin(updated, "864209");
+  const envelope = await vault.encryptRecord(created.masterKey, "transactions", { id: "recovery-1", amount: 77 });
+  assert.equal(JSON.stringify(await vault.decryptRecord(unlocked, "transactions", envelope)), JSON.stringify({ id: "recovery-1", amount: 77 }));
+  await assert.rejects(() => vault.unlockWithPin(updated, "246810"));
+});
