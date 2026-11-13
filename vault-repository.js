@@ -94,7 +94,7 @@
   }
 
   async function unlockWithRecoveryCode(code, newPin) {
-    if (!/^\\d{6}$/.test(String(newPin || ""))) throw new Error("A new six-digit PIN is required.");
+    if (!/^\d{6}$/.test(String(newPin || ""))) throw new Error("A new six-digit PIN is required.");
     const db = database || await openDatabase();
     const record = await readMeta(db);
     if (!record) { db.close(); throw new Error("No encrypted vault has been created."); }
