@@ -529,6 +529,13 @@
     <section class="settings-card security-settings">
       <div><h3>App lock</h3><p class="backup-intro">Your six-digit PIN is stored as a salted hash on this device. PocketLedger locks when you leave the app and after five minutes of inactivity.</p></div>
       <div class="security-actions"><button id="securityLockNow" class="secondary" type="button">Lock now</button><button id="securityChangePin" class="secondary" type="button">Change PIN</button></div>
+      <label class="backup-label" for="securityAutoLockMinutes">Automatic lock</label>
+      <select id="securityAutoLockMinutes" class="language-select" aria-label="Automatic lock timeout">
+        <option value="1">After 1 minute</option>
+        <option value="5">After 5 minutes</option>
+        <option value="10">After 10 minutes</option>
+        <option value="15">After 15 minutes</option>
+      </select>
       <p class="account-note">If you forget your PIN, your financial records are not erased, but this screen cannot recover the PIN. Keep your encrypted backup and its password safe. This app lock is an access barrier, not full database encryption.</p>
     </section>
     <section class="settings-card terms-section">
