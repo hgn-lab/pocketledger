@@ -29,7 +29,7 @@ jobs:
       - name: Run isolated browser integration tests
         run: npm run test:browser
       - name: Check JavaScript syntax
-        run: node --check app.js
+        run: node --check app.js && node --check vault-crypto.js && node --check vault-repository.js
       - name: Check direct launch and consolidated navigation
         run: |
           node --input-type=module <<'NODE'
@@ -42,7 +42,7 @@ jobs:
           const checks = [
             ['app launches directly', html.includes('<body>') && html.includes('<script src="app.js"></script>')],
             ['local PIN security module is loaded before app startup', html.includes('<script src="security-lock.js"></script>') && fs.existsSync('security-lock.js')],
-            ['vault crypto module is loaded before app startup', html.includes('<script src="vault-crypto.js"></script>') && fs.existsSync('vault-crypto.js')],
+            ['vault crypto module is loaded before app startup', html.includes('<script src="vault-crypto.js"></script>') && fs.existsSync('vault-crypto.js') && html.includes('<script src="vault-repository.js"></script>') && fs.existsSync('vault-repository.js')],
             ['PIN gate blocks database startup until unlock', fs.readFileSync('app.js', 'utf8').includes('await window.PocketLedgerLock.initialize()')],
             ['PIN hash uses PBKDF2 and no plaintext PIN persistence', fs.readFileSync('security-lock.js', 'utf8').includes('PBKDF2') && !fs.readFileSync('security-lock.js', 'utf8').includes('localStorage.setItem(STORAGE_KEY, pin)')],
             ['lock overlay and settings controls exist', html.includes('id="securityLock"') && html.includes('id="securityChangePin"') && html.includes('id="securityLockNow"')],
@@ -79,7 +79,7 @@ jobs:
             ['net worth history uses tested shared calculation', fs.readFileSync('finance-core.js', 'utf8').includes('function calculateNetWorthHistory') && fs.readFileSync('app.js', 'utf8').includes('PocketLedgerCore.calculateNetWorthHistory')],
             ['net worth breakdown and monthly movement are displayed', ['netWorthAssets','netWorthLiabilities','netWorthMonthlyChange'].every(id => html.includes('id="' + id + '"'))],
             ['net worth history tests cover opening dates and current cutoff', fs.readFileSync('tests/finance-core.test.js', 'utf8').includes('net worth history reconstructs assets, liabilities') && fs.readFileSync('tests/finance-core.test.js', 'utf8').includes('excludes activity before opening')],
-            ['service worker cache version refreshed', sw.includes('pocketledger-v56')]
+            ['service worker cache version refreshed', sw.includes('pocketledger-v57')]
           ];
           for (const [label, ok] of checks) console.log((ok ? 'PASS: ' : 'FAIL: ') + label);
           if (checks.some(([, ok]) => !ok)) process.exit(1);
